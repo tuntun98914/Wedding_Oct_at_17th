@@ -3,16 +3,11 @@ const CONFIG = {
 
   kakao: {
     jsKey: "ab0589cffa9e45b137dc4959a1d7e8b4",
-    shareUrl: "",
-    imageUrl: ""
+    shareUrl: "https://tuntu98914.github.io/",
+    imageUrl: "https://tuntu98914.github.io/images/hero/4.jpg"
   },
 
   bgm: {
-    /*
-      네이버앱까지 안정적으로 소리 나오게 하려면
-      청첩장 폴더에 music/bgm.mp3 파일을 넣어야 함.
-      없으면 유튜브 BGM으로 재생 시도함.
-    */
     mp3Url: "music/bgm.mp3",
     youtubeVideoId: "7iAKkbEWHfA"
   },
@@ -72,39 +67,7 @@ const CONFIG = {
   }
 };
 
-/* ─────────────────────────────
-   공통 유틸
-───────────────────────────── */
-(function () {
-  window.__WEDDING_UTILS__ = {
-    getPageUrl: function () {
-      if (CONFIG.kakao.shareUrl) return CONFIG.kakao.shareUrl;
-      return window.location.origin + window.location.pathname;
-    },
-
-    getImageUrl: function () {
-      if (CONFIG.kakao.imageUrl) return CONFIG.kakao.imageUrl;
-
-      const ogImage = document.querySelector("meta[property='og:image']");
-      if (ogImage && ogImage.content) {
-        return new URL(ogImage.content, window.__WEDDING_UTILS__.getPageUrl()).href;
-      }
-
-      return new URL("images/hero/4.jpg", window.__WEDDING_UTILS__.getPageUrl()).href;
-    },
-
-    normalizeText: function (value) {
-      return String(value || "")
-        .replace(/\s+/g, "")
-        .replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
-        .trim();
-    }
-  };
-})();
-
-/* ─────────────────────────────
-   이전 코드 잔여 요소 정리
-───────────────────────────── */
+/* 기존 잔여 요소 정리 */
 (function () {
   function cleanOldElements() {
     [
@@ -128,9 +91,7 @@ const CONFIG = {
   window.addEventListener("DOMContentLoaded", cleanOldElements);
 })();
 
-/* ─────────────────────────────
-   BGM : 청첩장 열기 클릭 시 재생
-───────────────────────────── */
+/* BGM */
 (function () {
   let audio = null;
   let isPlaying = false;
@@ -162,8 +123,8 @@ const CONFIG = {
   }
 
   function playYoutubeBgm() {
-    const existing = document.getElementById("youtubeBgmPlayer");
-    if (existing) existing.remove();
+    const old = document.getElementById("youtubeBgmPlayer");
+    if (old) old.remove();
 
     const iframe = document.createElement("iframe");
     iframe.id = "youtubeBgmPlayer";
@@ -172,7 +133,7 @@ const CONFIG = {
       CONFIG.bgm.youtubeVideoId +
       "?autoplay=1&loop=1&playlist=" +
       CONFIG.bgm.youtubeVideoId +
-      "&controls=0&modestbranding=1&playsinline=1&rel=0&enablejsapi=1";
+      "&controls=0&modestbranding=1&playsinline=1&rel=0";
 
     iframe.allow = "autoplay; encrypted-media";
     iframe.style.position = "fixed";
@@ -322,14 +283,14 @@ const CONFIG = {
   });
 })();
 
-/* ─────────────────────────────
-   카카오톡 공유 + 일정 등록
-───────────────────────────── */
+/* 카카오톡 공유 */
 (function () {
+  function getShareUrl() {
+    return CONFIG.kakao.shareUrl;
+  }
+
   function getCalendarUrl() {
-    const baseUrl = window.__WEDDING_UTILS__.getPageUrl();
-    const separator = baseUrl.indexOf("?") > -1 ? "&" : "?";
-    return baseUrl + separator + "calendar=1";
+    return CONFIG.kakao.shareUrl + "?calendar=1";
   }
 
   function formatICSDate(date, time) {
@@ -339,10 +300,9 @@ const CONFIG = {
   }
 
   function addHoursToTime(time, hoursToAdd) {
-    const parts = time.split(":").map(Number);
-    const hour = parts[0] + hoursToAdd;
-    const minute = parts[1];
-    return String(hour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
+    const [hour, minute] = time.split(":").map(Number);
+    const newHour = hour + hoursToAdd;
+    return String(newHour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
   }
 
   function escapeICS(text) {
@@ -442,77 +402,57 @@ const CONFIG = {
     document.head.appendChild(script);
   }
 
-  function initKakao() {
-    if (!CONFIG.kakao.jsKey) {
-      alert("카카오 JavaScript 키가 없습니다.");
-      return false;
-    }
-
-    if (!window.Kakao.isInitialized()) {
-      window.Kakao.init(CONFIG.kakao.jsKey);
-    }
-
-    return true;
-  }
-
   function shareKakaoWedding() {
     loadKakaoSDK(function () {
-      if (!initKakao()) return;
-
-      const shareUrl = window.__WEDDING_UTILS__.getPageUrl();
-      const calendarUrl = getCalendarUrl();
-      const imageUrl = window.__WEDDING_UTILS__.getImageUrl();
+      if (!window.Kakao.isInitialized()) {
+        window.Kakao.init(CONFIG.kakao.jsKey);
+      }
 
       window.Kakao.Share.sendDefault({
         objectType: "feed",
         content: {
           title: `${CONFIG.groom.name} ♥ ${CONFIG.bride.name} 결혼합니다.`,
           description: `2026년 10월 17일 토요일 오후 6시 · ${CONFIG.wedding.venue} ${CONFIG.wedding.hall}`,
-          imageUrl: imageUrl,
+          imageUrl: CONFIG.kakao.imageUrl,
           link: {
-            mobileWebUrl: shareUrl,
-            webUrl: shareUrl
+            mobileWebUrl: getShareUrl(),
+            webUrl: getShareUrl()
           }
         },
         buttons: [
           {
             title: "청첩장 보기",
             link: {
-              mobileWebUrl: shareUrl,
-              webUrl: shareUrl
+              mobileWebUrl: getShareUrl(),
+              webUrl: getShareUrl()
             }
           },
           {
             title: "일정 등록하기",
             link: {
-              mobileWebUrl: calendarUrl,
-              webUrl: calendarUrl
+              mobileWebUrl: getCalendarUrl(),
+              webUrl: getCalendarUrl()
             }
           }
-        ],
-        fail: function (error) {
-          alert(
-            "카카오톡 공유 요청 실패\n\n" +
-            "1. 카카오 디벨로퍼스에 현재 도메인 등록 필요\n" +
-            "2. 등록 도메인: " + window.location.origin + "\n\n" +
-            "오류: " + JSON.stringify(error)
-          );
-        }
+        ]
       });
     });
   }
 
   window.__shareWeddingKakao = shareKakaoWedding;
-
   window.addEventListener("DOMContentLoaded", checkCalendarParam);
 })();
 
-/* ─────────────────────────────
-   화면에 보이는 불필요 버튼 제거
-───────────────────────────── */
+/* 불필요 버튼 제거 */
 (function () {
+  function normalizeText(value) {
+    return String(value || "")
+      .replace(/\s+/g, "")
+      .replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
+      .trim();
+  }
+
   function removeUnwantedButtonsOnly() {
-    const normalizeText = window.__WEDDING_UTILS__.normalizeText;
     const elements = document.querySelectorAll("a, button, [role='button']");
 
     elements.forEach(function (el) {
@@ -546,17 +486,11 @@ const CONFIG = {
         el.remove();
       }
     });
-
-    ["extraWeddingButtons", "tmapOnlySection", "secretKakaoShareButton"].forEach(function (id) {
-      const el = document.getElementById(id);
-      if (el) el.remove();
-    });
   }
 
   window.addEventListener("DOMContentLoaded", function () {
     removeUnwantedButtonsOnly();
-    setTimeout(removeUnwantedButtonsOnly, 300);
-    setTimeout(removeUnwantedButtonsOnly, 800);
+    setTimeout(removeUnwantedButtonsOnly, 500);
     setTimeout(removeUnwantedButtonsOnly, 1500);
   });
 
@@ -571,9 +505,7 @@ const CONFIG = {
   });
 })();
 
-/* ─────────────────────────────
-   오시는 길 상세 안내 추가
-───────────────────────────── */
+/* 오시는 길 상세 안내 */
 (function () {
   function createTransportTitle(icon, english, korean) {
     const title = document.createElement("div");
@@ -662,46 +594,49 @@ const CONFIG = {
     return section;
   }
 
-  function findLocationSection() {
-    const candidates = Array.from(document.querySelectorAll("section, div, article"));
+  function findTextNode(keyword) {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let node;
 
-    const matched = candidates.find(function (el) {
-      const text = el.innerText || el.textContent || "";
-      return (
-        text.includes("오시는 길") ||
-        text.includes(CONFIG.wedding.address) ||
-        text.includes(CONFIG.wedding.tel)
-      );
-    });
+    while ((node = walker.nextNode())) {
+      if ((node.nodeValue || "").includes(keyword)) {
+        return node;
+      }
+    }
 
-    return matched || document.body;
+    return null;
   }
 
-  function findTelAnchor(locationSection) {
-    const elements = Array.from(locationSection.querySelectorAll("*"));
+  function getInsertTarget() {
+    const telNode = findTextNode(CONFIG.wedding.tel);
+    const addressNode = findTextNode(CONFIG.wedding.address);
 
-    const telElement = elements.find(function (el) {
-      const text = el.innerText || el.textContent || "";
-      return text.includes(CONFIG.wedding.tel);
-    });
+    let el = null;
 
-    if (!telElement) return null;
+    if (telNode && telNode.parentElement) {
+      el = telNode.parentElement;
+    } else if (addressNode && addressNode.parentElement) {
+      el = addressNode.parentElement;
+    }
 
-    let anchor = telElement;
+    if (!el) return null;
 
-    for (let i = 0; i < 4; i++) {
-      if (!anchor.parentElement || anchor.parentElement === locationSection) break;
+    for (let i = 0; i < 5; i++) {
+      if (!el.parentElement || el.parentElement === document.body) break;
 
-      const parentText = anchor.parentElement.innerText || anchor.parentElement.textContent || "";
+      const parentText = el.parentElement.innerText || el.parentElement.textContent || "";
 
-      if (parentText.includes(CONFIG.wedding.tel) && parentText.length < 400) {
-        anchor = anchor.parentElement;
+      if (
+        parentText.includes(CONFIG.wedding.tel) &&
+        parentText.length < 700
+      ) {
+        el = el.parentElement;
       } else {
         break;
       }
     }
 
-    return anchor;
+    return el;
   }
 
   function createTransportInfo() {
@@ -709,31 +644,32 @@ const CONFIG = {
     if (old) old.remove();
 
     const section = createTransportInfoElement();
-    const locationSection = findLocationSection();
-    const telAnchor = findTelAnchor(locationSection);
+    const target = getInsertTarget();
 
-    if (telAnchor && telAnchor.parentElement) {
-      telAnchor.insertAdjacentElement("afterend", section);
+    if (target) {
+      target.insertAdjacentElement("afterend", section);
       return;
     }
 
-    const mapImage = locationSection.querySelector("img");
+    const locationSection =
+      document.querySelector("#location") ||
+      document.querySelector(".location") ||
+      document.querySelector("[data-section='location']") ||
+      document.querySelector(".map") ||
+      document.querySelector("#map") ||
+      document.body;
 
-    if (mapImage) {
-      mapImage.insertAdjacentElement("beforebegin", section);
-    } else {
-      locationSection.appendChild(section);
-    }
+    locationSection.appendChild(section);
   }
 
   window.addEventListener("DOMContentLoaded", function () {
-    setTimeout(createTransportInfo, 700);
-    setTimeout(createTransportInfo, 1500);
-    setTimeout(createTransportInfo, 3000);
+    setTimeout(createTransportInfo, 800);
+    setTimeout(createTransportInfo, 1800);
+    setTimeout(createTransportInfo, 3500);
   });
 
   window.addEventListener("load", function () {
-    setTimeout(createTransportInfo, 700);
+    setTimeout(createTransportInfo, 800);
 
     const observer = new MutationObserver(function () {
       if (!document.getElementById("customTransportInfo")) {
@@ -748,9 +684,7 @@ const CONFIG = {
   });
 })();
 
-/* ─────────────────────────────
-   길찾기 버튼 추가
-───────────────────────────── */
+/* 길찾기 버튼 */
 (function () {
   const TMAP_ANDROID_STORE = "https://play.google.com/store/apps/details?id=com.skt.tmap.ku";
   const TMAP_IOS_STORE = "https://apps.apple.com/kr/app/id431589174";
@@ -850,9 +784,7 @@ const CONFIG = {
   });
 })();
 
-/* ─────────────────────────────
-   작은 카카오톡 공유 버튼
-───────────────────────────── */
+/* 작은 카카오톡 공유 버튼 */
 (function () {
   function createSmallKakaoShareButton() {
     if (document.getElementById("smallKakaoShareButton")) return;
