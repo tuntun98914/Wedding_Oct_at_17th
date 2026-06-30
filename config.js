@@ -13,7 +13,7 @@
  */
 
 const CONFIG = {
-  useCurtain: true,
+  useCurtain: false,
 
   groom: {
     name: "조승우",
