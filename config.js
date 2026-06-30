@@ -3,8 +3,8 @@ const CONFIG = {
 
   kakao: {
     jsKey: "ab0589cffa9e45b137dc4959a1d7e8b4",
-    shareUrl: "",
-    imageUrl: ""
+    shareUrl: "https://tuntu98914.github.io",
+    imageUrl: "https://tuntu98914.github.io/images/hero/4.jpg"
   },
 
   groom: {
@@ -113,7 +113,7 @@ const CONFIG = {
   window.addEventListener("DOMContentLoaded", cleanOldElements);
 })();
 
-/* ── BGM : 입장 버튼 클릭 시 강제 재생 구조 ── */
+/* ── BGM : 청첩장 열기 클릭 시 재생 ── */
 (function () {
   const YOUTUBE_VIDEO_ID = "7iAKkbEWHfA";
   let isPlaying = false;
@@ -284,22 +284,18 @@ const CONFIG = {
   }
 
   window.addEventListener("DOMContentLoaded", function () {
-    createStartOverlay();
+    setTimeout(createStartOverlay, 300);
   });
 
   window.addEventListener("load", function () {
-    createStartOverlay();
+    setTimeout(createStartOverlay, 300);
   });
 })();
 
 /* ── 카카오톡 공유 메시지 + 일정 등록 기능 ── */
 (function () {
   function getBaseShareUrl() {
-    if (CONFIG.kakao && CONFIG.kakao.shareUrl) {
-      return CONFIG.kakao.shareUrl;
-    }
-
-    return window.location.origin + window.location.pathname;
+    return CONFIG.kakao.shareUrl || window.location.origin + window.location.pathname;
   }
 
   function getCalendarUrl() {
@@ -309,16 +305,7 @@ const CONFIG = {
   }
 
   function getShareImageUrl() {
-    if (CONFIG.kakao && CONFIG.kakao.imageUrl) {
-      return CONFIG.kakao.imageUrl;
-    }
-
-    const ogImage = document.querySelector("meta[property='og:image']");
-    if (ogImage && ogImage.content) {
-      return new URL(ogImage.content, getBaseShareUrl()).href;
-    }
-
-    return new URL("images/hero/4.jpg", getBaseShareUrl()).href;
+    return CONFIG.kakao.imageUrl || new URL("images/hero/4.jpg", getBaseShareUrl()).href;
   }
 
   function formatICSDate(date, time) {
@@ -330,7 +317,6 @@ const CONFIG = {
   function addHoursToTime(time, hoursToAdd) {
     const [hour, minute] = time.split(":").map(Number);
     const newHour = hour + hoursToAdd;
-
     return String(newHour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
   }
 
@@ -456,34 +442,38 @@ const CONFIG = {
       const calendarUrl = getCalendarUrl();
       const imageUrl = getShareImageUrl();
 
-      window.Kakao.Share.sendDefault({
-        objectType: "feed",
-        content: {
-          title: `${CONFIG.groom.name} ♥ ${CONFIG.bride.name} 결혼합니다.`,
-          description: `2026년 10월 17일 토요일 오후 6시 · ${CONFIG.wedding.venue} ${CONFIG.wedding.hall}`,
-          imageUrl: imageUrl,
-          link: {
-            mobileWebUrl: shareUrl,
-            webUrl: shareUrl
-          }
-        },
-        buttons: [
-          {
-            title: "청첩장 보기",
+      try {
+        window.Kakao.Share.sendDefault({
+          objectType: "feed",
+          content: {
+            title: `${CONFIG.groom.name} ♥ ${CONFIG.bride.name} 결혼합니다.`,
+            description: `2026년 10월 17일 토요일 오후 6시 · ${CONFIG.wedding.venue} ${CONFIG.wedding.hall}`,
+            imageUrl: imageUrl,
             link: {
               mobileWebUrl: shareUrl,
               webUrl: shareUrl
             }
           },
-          {
-            title: "일정 등록하기",
-            link: {
-              mobileWebUrl: calendarUrl,
-              webUrl: calendarUrl
+          buttons: [
+            {
+              title: "청첩장 보기",
+              link: {
+                mobileWebUrl: shareUrl,
+                webUrl: shareUrl
+              }
+            },
+            {
+              title: "일정 등록하기",
+              link: {
+                mobileWebUrl: calendarUrl,
+                webUrl: calendarUrl
+              }
             }
-          }
-        ]
-      });
+          ]
+        });
+      } catch (error) {
+        alert("카카오톡 공유 요청에 실패했습니다. 카카오 디벨로퍼스에서 tuntu98914.github.io 도메인 등록 여부를 확인해주세요.");
+      }
     });
   }
 
@@ -491,7 +481,7 @@ const CONFIG = {
   window.addEventListener("DOMContentLoaded", checkCalendarParam);
 })();
 
-/* ── 화면에 보이는 불필요 버튼만 제거 ── */
+/* ── 화면에 보이는 불필요 버튼 제거 ── */
 (function () {
   function normalizeText(value) {
     return String(value || "")
@@ -620,13 +610,11 @@ const CONFIG = {
     return li;
   }
 
-  function createTransportInfo() {
-    if (document.getElementById("customTransportInfo")) return;
-
+  function createTransportInfoElement() {
     const section = document.createElement("section");
     section.id = "customTransportInfo";
     section.style.maxWidth = "520px";
-    section.style.margin = "28px auto 20px";
+    section.style.margin = "24px auto 28px";
     section.style.padding = "0 20px";
     section.style.textAlign = "left";
     section.style.boxSizing = "border-box";
@@ -671,39 +659,95 @@ const CONFIG = {
     section.appendChild(carTitle);
     section.appendChild(carList);
 
-    const locationSection =
-      document.querySelector("#location") ||
-      document.querySelector(".location") ||
-      document.querySelector("[data-section='location']") ||
-      document.querySelector(".map") ||
-      document.querySelector("#map");
+    return section;
+  }
 
-    if (!locationSection) {
-      document.body.appendChild(section);
+  function findLocationSection() {
+    const candidates = Array.from(document.querySelectorAll("section, div, article"));
+
+    const matched = candidates.find(function (el) {
+      const text = el.innerText || el.textContent || "";
+      return (
+        text.includes("오시는 길") ||
+        text.includes(CONFIG.wedding.address) ||
+        text.includes(CONFIG.wedding.tel)
+      );
+    });
+
+    return matched || document.body;
+  }
+
+  function findTelAnchor(locationSection) {
+    const elements = Array.from(locationSection.querySelectorAll("*"));
+
+    const telElement = elements.find(function (el) {
+      const text = el.innerText || el.textContent || "";
+      return text.includes(CONFIG.wedding.tel);
+    });
+
+    if (!telElement) return null;
+
+    let anchor = telElement;
+
+    for (let i = 0; i < 5; i++) {
+      if (!anchor.parentElement || anchor.parentElement === locationSection) break;
+
+      const parentText = anchor.parentElement.innerText || anchor.parentElement.textContent || "";
+
+      if (
+        parentText.includes(CONFIG.wedding.tel) &&
+        parentText.length < 500
+      ) {
+        anchor = anchor.parentElement;
+      } else {
+        break;
+      }
+    }
+
+    return anchor;
+  }
+
+  function createTransportInfo() {
+    const old = document.getElementById("customTransportInfo");
+    if (old) old.remove();
+
+    const section = createTransportInfoElement();
+    const locationSection = findLocationSection();
+    const telAnchor = findTelAnchor(locationSection);
+
+    if (telAnchor && telAnchor.parentElement) {
+      telAnchor.insertAdjacentElement("afterend", section);
       return;
     }
 
-    const mapImage =
-      locationSection.querySelector("img") ||
-      locationSection.querySelector(".map-image") ||
-      locationSection.querySelector("[class*='map']");
+    const mapImage = locationSection.querySelector("img");
 
-    if (mapImage && mapImage.parentElement && mapImage.parentElement !== locationSection) {
-      locationSection.insertBefore(section, mapImage.parentElement);
-    } else if (mapImage && mapImage !== locationSection) {
-      locationSection.insertBefore(section, mapImage);
+    if (mapImage) {
+      mapImage.insertAdjacentElement("beforebegin", section);
     } else {
       locationSection.appendChild(section);
     }
   }
 
   window.addEventListener("DOMContentLoaded", function () {
-    setTimeout(createTransportInfo, 500);
-    setTimeout(createTransportInfo, 1200);
+    setTimeout(createTransportInfo, 700);
+    setTimeout(createTransportInfo, 1500);
+    setTimeout(createTransportInfo, 3000);
   });
 
   window.addEventListener("load", function () {
-    setTimeout(createTransportInfo, 500);
+    setTimeout(createTransportInfo, 700);
+
+    const observer = new MutationObserver(function () {
+      if (!document.getElementById("customTransportInfo")) {
+        createTransportInfo();
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
   });
 })();
 
@@ -762,9 +806,7 @@ const CONFIG = {
 
   function removeOldCustomMapButtons() {
     const oldCustomMapButtons = document.getElementById("customMapButtons");
-    if (oldCustomMapButtons) {
-      oldCustomMapButtons.remove();
-    }
+    if (oldCustomMapButtons) oldCustomMapButtons.remove();
   }
 
   function createMapButtons() {
@@ -804,21 +846,18 @@ const CONFIG = {
       document.querySelector(".location") ||
       document.querySelector("[data-section='location']") ||
       document.querySelector(".map") ||
-      document.querySelector("#map");
+      document.querySelector("#map") ||
+      document.body;
 
-    if (locationSection) {
-      locationSection.appendChild(section);
-    } else {
-      document.body.appendChild(section);
-    }
+    locationSection.appendChild(section);
   }
 
   window.addEventListener("DOMContentLoaded", function () {
-    setTimeout(createMapButtons, 800);
+    setTimeout(createMapButtons, 1200);
   });
 
   window.addEventListener("load", function () {
-    setTimeout(createMapButtons, 800);
+    setTimeout(createMapButtons, 1200);
   });
 })();
 
