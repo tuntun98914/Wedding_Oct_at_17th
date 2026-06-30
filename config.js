@@ -62,6 +62,44 @@ const CONFIG = {
   }
 };
 
+/* ── 이전 강제 숨김 복구 ── */
+(function () {
+  function restoreWrongHiddenElements() {
+    const oldStyle = document.getElementById("forceHideCalendarStyle");
+    if (oldStyle) oldStyle.remove();
+
+    const hiddenByOldCode = document.querySelectorAll('[hidden][aria-hidden="true"]');
+
+    hiddenByOldCode.forEach(function (el) {
+      const text = (el.innerText || el.textContent || "").replace(/\s+/g, "").trim();
+
+      const shouldStayHidden =
+        text === "Apple캘린더" ||
+        text === "애플캘린더" ||
+        text === "Google캘린더" ||
+        text === "구글캘린더" ||
+        text === "일정등록하기";
+
+      if (!shouldStayHidden) {
+        el.removeAttribute("hidden");
+        el.removeAttribute("aria-hidden");
+        el.style.removeProperty("display");
+        el.style.removeProperty("visibility");
+        el.style.removeProperty("opacity");
+        el.style.removeProperty("height");
+        el.style.removeProperty("min-height");
+        el.style.removeProperty("padding");
+        el.style.removeProperty("margin");
+        el.style.removeProperty("border");
+        el.style.removeProperty("overflow");
+      }
+    });
+  }
+
+  window.addEventListener("DOMContentLoaded", restoreWrongHiddenElements);
+  window.addEventListener("load", restoreWrongHiddenElements);
+})();
+
 /* ── 배경음악 설정 : YouTube BGM ── */
 (function () {
   const YOUTUBE_VIDEO_ID = "7iAKkbEWHfA";
@@ -331,89 +369,85 @@ const CONFIG = {
   window.addEventListener("DOMContentLoaded", checkCalendarParam);
 })();
 
-/* ── 화면에 보이는 불필요 버튼 제거 ── */
+/* ── 화면에 보이는 불필요 버튼만 제거 ── */
 (function () {
-  function removeUnwantedButtons() {
-    const elements = document.querySelectorAll("a, button");
+  function normalizeText(value) {
+    return String(value || "")
+      .replace(/\s+/g, "")
+      .replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
+      .trim();
+  }
+
+  function removeUnwantedButtonsOnly() {
+    const elements = document.querySelectorAll("a, button, [role='button']");
 
     elements.forEach(function (el) {
-      const text = (el.innerText || el.textContent || "").trim();
+      if (el.id === "bgmButton") return;
+      if (el.id === "secretKakaoShareButton") return;
+      if (el.closest && el.closest("#customMapButtons")) return;
+
+      const text = normalizeText(el.innerText || el.textContent || "");
       const href = el.getAttribute("href") || "";
 
-      const isTopKakaoMapButton =
-        text === "카카오맵";
+      const isOldTopKakaoMap = text === "카카오맵";
+      const isOldTopNaverMap = text === "네이버지도";
 
-      const isTopNaverMapButton =
-        text === "네이버지도";
+      const isVisibleKakaoShare =
+        text === "카카오톡으로공유하기" ||
+        text === "카카오톡공유하기" ||
+        text === "카카오톡으로청첩장보내기";
 
-      const isKakaoShareButton =
-        text === "카카오톡으로 공유하기" ||
-        text === "카카오톡 공유하기" ||
-        text === "카카오톡으로 청첩장 보내기";
+      const isAppleCalendar =
+        text === "Apple캘린더" ||
+        text === "애플캘린더" ||
+        text.includes("Apple캘린더") ||
+        text.includes("애플캘린더");
 
-      const isGoogleCalendarButton =
-        text.includes("구글 캘린더") ||
-        text.includes("Google Calendar") ||
+      const isGoogleCalendar =
+        text === "Google캘린더" ||
+        text === "구글캘린더" ||
+        text.includes("Google캘린더") ||
+        text.includes("구글캘린더");
+
+      const isCalendarLink =
+        href.includes(".ics") ||
+        href.startsWith("webcal:") ||
         href.includes("calendar.google.com") ||
         href.includes("google.com/calendar");
 
-      const isAppleCalendarButton =
-        text.includes("애플 캘린더") ||
-        text.includes("Apple Calendar") ||
-        text.includes("아이폰 캘린더") ||
-        href.includes("icloud.com/calendar") ||
-        href.includes(".ics");
+      const shouldRemove =
+        isOldTopKakaoMap ||
+        isOldTopNaverMap ||
+        isVisibleKakaoShare ||
+        isAppleCalendar ||
+        isGoogleCalendar ||
+        isCalendarLink;
 
-      const isCalendarButton =
-        text === "일정 등록하기" ||
-        text === "캘린더 등록하기" ||
-        text === "달력에 추가";
-
-      if (
-        isTopKakaoMapButton ||
-        isTopNaverMapButton ||
-        isKakaoShareButton ||
-        isGoogleCalendarButton ||
-        isAppleCalendarButton ||
-        isCalendarButton
-      ) {
-        const parent = el.parentElement;
+      if (shouldRemove) {
         el.remove();
-
-        if (
-          parent &&
-          parent.children.length === 0 &&
-          parent.innerText.trim() === ""
-        ) {
-          parent.remove();
-        }
       }
     });
 
     const oldExtraButtons = document.getElementById("extraWeddingButtons");
-    if (oldExtraButtons) {
-      oldExtraButtons.remove();
-    }
+    if (oldExtraButtons) oldExtraButtons.remove();
 
     const oldTmapOnly = document.getElementById("tmapOnlySection");
-    if (oldTmapOnly) {
-      oldTmapOnly.remove();
-    }
+    if (oldTmapOnly) oldTmapOnly.remove();
   }
 
   window.addEventListener("DOMContentLoaded", function () {
-    removeUnwantedButtons();
-    setTimeout(removeUnwantedButtons, 300);
-    setTimeout(removeUnwantedButtons, 800);
-    setTimeout(removeUnwantedButtons, 1500);
-    setTimeout(removeUnwantedButtons, 2500);
+    removeUnwantedButtonsOnly();
+    setTimeout(removeUnwantedButtonsOnly, 300);
+    setTimeout(removeUnwantedButtonsOnly, 800);
+    setTimeout(removeUnwantedButtonsOnly, 1500);
+    setTimeout(removeUnwantedButtonsOnly, 2500);
   });
 
   window.addEventListener("load", function () {
-    removeUnwantedButtons();
+    removeUnwantedButtonsOnly();
 
     const observer = new MutationObserver(function () {
-      removeUnwantedButtons();
+      removeUnwantedButtonsOnly();
     });
 
     observer.observe(document.body, {
@@ -476,7 +510,7 @@ const CONFIG = {
     return button;
   }
 
-  function removeOldMapButtons() {
+  function removeOldCustomMapButtons() {
     const oldCustomMapButtons = document.getElementById("customMapButtons");
     if (oldCustomMapButtons) {
       oldCustomMapButtons.remove();
@@ -484,7 +518,7 @@ const CONFIG = {
   }
 
   function createMapButtons() {
-    removeOldMapButtons();
+    removeOldCustomMapButtons();
 
     if (document.getElementById("customMapButtons")) return;
 
