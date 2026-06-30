@@ -62,11 +62,21 @@ const CONFIG = {
   }
 };
 
-/* ── 이전 강제 숨김 복구 ── */
+/* ── 이전 코드 잔여 버튼/스타일 정리 ── */
 (function () {
-  function restoreWrongHiddenElements() {
-    const oldStyle = document.getElementById("forceHideCalendarStyle");
-    if (oldStyle) oldStyle.remove();
+  function cleanOldElements() {
+    const ids = [
+      "bgmButton",
+      "secretKakaoShareButton",
+      "forceHideCalendarStyle",
+      "extraWeddingButtons",
+      "tmapOnlySection"
+    ];
+
+    ids.forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+    });
 
     const hiddenByOldCode = document.querySelectorAll('[hidden][aria-hidden="true"]');
 
@@ -77,8 +87,7 @@ const CONFIG = {
         text === "Apple캘린더" ||
         text === "애플캘린더" ||
         text === "Google캘린더" ||
-        text === "구글캘린더" ||
-        text === "일정등록하기";
+        text === "구글캘린더";
 
       if (!shouldStayHidden) {
         el.removeAttribute("hidden");
@@ -96,80 +105,82 @@ const CONFIG = {
     });
   }
 
-  window.addEventListener("DOMContentLoaded", restoreWrongHiddenElements);
-  window.addEventListener("load", restoreWrongHiddenElements);
+  window.addEventListener("DOMContentLoaded", cleanOldElements);
+  window.addEventListener("load", cleanOldElements);
 })();
 
-/* ── 배경음악 설정 : YouTube BGM ── */
+/* ── BGM 자동 재생 : YouTube ── */
 (function () {
   const YOUTUBE_VIDEO_ID = "7iAKkbEWHfA";
+  let userGestureTried = false;
 
-  function createBgmButton() {
-    if (document.getElementById("bgmButton")) return;
-
-    const button = document.createElement("button");
-    button.id = "bgmButton";
-    button.innerText = "BGM ON";
-    button.style.position = "fixed";
-    button.style.right = "16px";
-    button.style.bottom = "16px";
-    button.style.zIndex = "99999";
-    button.style.padding = "10px 14px";
-    button.style.border = "1px solid #ddd";
-    button.style.borderRadius = "999px";
-    button.style.background = "rgba(255,255,255,0.9)";
-    button.style.color = "#333";
-    button.style.fontSize = "13px";
-    button.style.cursor = "pointer";
-    button.style.boxShadow = "0 4px 12px rgba(0,0,0,0.12)";
-
-    let isPlaying = false;
-
-    button.addEventListener("click", function () {
-      const existingPlayer = document.getElementById("youtubeBgmPlayer");
-
-      if (!isPlaying) {
-        if (!existingPlayer) {
-          const iframe = document.createElement("iframe");
-          iframe.id = "youtubeBgmPlayer";
-          iframe.src =
-            "https://www.youtube.com/embed/" +
-            YOUTUBE_VIDEO_ID +
-            "?autoplay=1&loop=1&playlist=" +
-            YOUTUBE_VIDEO_ID +
-            "&controls=0&modestbranding=1&playsinline=1";
-
-          iframe.allow = "autoplay";
-          iframe.style.position = "fixed";
-          iframe.style.width = "1px";
-          iframe.style.height = "1px";
-          iframe.style.left = "-9999px";
-          iframe.style.top = "-9999px";
-          iframe.style.opacity = "0";
-          iframe.style.pointerEvents = "none";
-
-          document.body.appendChild(iframe);
-        }
-
-        isPlaying = true;
-        button.innerText = "BGM OFF";
-      } else {
-        if (existingPlayer) {
-          existingPlayer.remove();
-        }
-
-        isPlaying = false;
-        button.innerText = "BGM ON";
-      }
-    });
-
-    document.body.appendChild(button);
+  function removeOldBgmButton() {
+    const oldButton = document.getElementById("bgmButton");
+    if (oldButton) oldButton.remove();
   }
 
-  window.addEventListener("DOMContentLoaded", createBgmButton);
+  function createYoutubeBgmPlayer(forceRestart) {
+    removeOldBgmButton();
+
+    const existingPlayer = document.getElementById("youtubeBgmPlayer");
+
+    if (existingPlayer && forceRestart) {
+      existingPlayer.remove();
+    } else if (existingPlayer) {
+      return;
+    }
+
+    const iframe = document.createElement("iframe");
+    iframe.id = "youtubeBgmPlayer";
+    iframe.src =
+      "https://www.youtube.com/embed/" +
+      YOUTUBE_VIDEO_ID +
+      "?autoplay=1&loop=1&playlist=" +
+      YOUTUBE_VIDEO_ID +
+      "&controls=0&modestbranding=1&playsinline=1&rel=0&enablejsapi=1";
+
+    iframe.allow = "autoplay; encrypted-media";
+    iframe.setAttribute("allowfullscreen", "false");
+
+    iframe.style.position = "fixed";
+    iframe.style.width = "1px";
+    iframe.style.height = "1px";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "-9999px";
+    iframe.style.opacity = "0";
+    iframe.style.pointerEvents = "none";
+    iframe.style.border = "0";
+
+    document.body.appendChild(iframe);
+  }
+
+  function startBgmAuto() {
+    createYoutubeBgmPlayer(false);
+  }
+
+  function startBgmByFirstAction() {
+    if (userGestureTried) return;
+    userGestureTried = true;
+    createYoutubeBgmPlayer(true);
+  }
+
+  window.addEventListener("DOMContentLoaded", function () {
+    removeOldBgmButton();
+    setTimeout(startBgmAuto, 300);
+    setTimeout(startBgmAuto, 1000);
+  });
+
+  window.addEventListener("load", function () {
+    removeOldBgmButton();
+    setTimeout(startBgmAuto, 300);
+  });
+
+  document.addEventListener("click", startBgmByFirstAction, { once: true });
+  document.addEventListener("touchstart", startBgmByFirstAction, { once: true });
+  document.addEventListener("scroll", startBgmByFirstAction, { once: true });
 })();
 
-/* ── 카카오톡 공유 메시지용 일정 등록 기능 ── */
+/* ── 카카오톡 공유 메시지 + 일정 등록 기능 ── */
 (function () {
   function getBaseShareUrl() {
     if (CONFIG.kakao && CONFIG.kakao.shareUrl) {
@@ -382,8 +393,7 @@ const CONFIG = {
     const elements = document.querySelectorAll("a, button, [role='button']");
 
     elements.forEach(function (el) {
-      if (el.id === "bgmButton") return;
-      if (el.id === "secretKakaoShareButton") return;
+      if (el.id === "smallKakaoShareButton") return;
       if (el.closest && el.closest("#customMapButtons")) return;
 
       const text = normalizeText(el.innerText || el.textContent || "");
@@ -392,7 +402,7 @@ const CONFIG = {
       const isOldTopKakaoMap = text === "카카오맵";
       const isOldTopNaverMap = text === "네이버지도";
 
-      const isVisibleKakaoShare =
+      const isOldKakaoShare =
         text === "카카오톡으로공유하기" ||
         text === "카카오톡공유하기" ||
         text === "카카오톡으로청첩장보내기";
@@ -418,7 +428,7 @@ const CONFIG = {
       const shouldRemove =
         isOldTopKakaoMap ||
         isOldTopNaverMap ||
-        isVisibleKakaoShare ||
+        isOldKakaoShare ||
         isAppleCalendar ||
         isGoogleCalendar ||
         isCalendarLink;
@@ -433,6 +443,9 @@ const CONFIG = {
 
     const oldTmapOnly = document.getElementById("tmapOnlySection");
     if (oldTmapOnly) oldTmapOnly.remove();
+
+    const oldSecret = document.getElementById("secretKakaoShareButton");
+    if (oldSecret) oldSecret.remove();
   }
 
   window.addEventListener("DOMContentLoaded", function () {
@@ -572,58 +585,43 @@ const CONFIG = {
   });
 })();
 
-/* ── 숨겨진 카카오톡 공유 실행 버튼 ── */
-/*
-  화면 왼쪽 아래 구석을 3번 빠르게 누르면
-  카카오톡 공유창이 열림.
-*/
+/* ── 작은 카카오톡 공유 버튼 ── */
 (function () {
-  let tapCount = 0;
-  let tapTimer = null;
-
-  function createSecretShareButton() {
-    if (document.getElementById("secretKakaoShareButton")) return;
+  function createSmallKakaoShareButton() {
+    if (document.getElementById("smallKakaoShareButton")) return;
 
     const button = document.createElement("button");
-    button.id = "secretKakaoShareButton";
+    button.id = "smallKakaoShareButton";
     button.type = "button";
-    button.setAttribute("aria-label", "secret share");
+    button.innerText = "카톡 공유";
 
     button.style.position = "fixed";
-    button.style.left = "0";
-    button.style.bottom = "0";
-    button.style.width = "44px";
-    button.style.height = "44px";
+    button.style.left = "12px";
+    button.style.bottom = "12px";
     button.style.zIndex = "999999";
-    button.style.opacity = "0";
-    button.style.background = "transparent";
-    button.style.border = "0";
-    button.style.padding = "0";
-    button.style.margin = "0";
-    button.style.cursor = "default";
+    button.style.padding = "7px 10px";
+    button.style.border = "1px solid rgba(0,0,0,0.08)";
+    button.style.borderRadius = "999px";
+    button.style.background = "rgba(254,229,0,0.92)";
+    button.style.color = "#222";
+    button.style.fontSize = "11px";
+    button.style.fontWeight = "500";
+    button.style.lineHeight = "1";
+    button.style.cursor = "pointer";
+    button.style.boxShadow = "0 3px 10px rgba(0,0,0,0.12)";
+    button.style.opacity = "0.85";
 
     button.addEventListener("click", function () {
-      tapCount += 1;
-
-      clearTimeout(tapTimer);
-
-      tapTimer = setTimeout(function () {
-        tapCount = 0;
-      }, 1200);
-
-      if (tapCount >= 3) {
-        tapCount = 0;
-        clearTimeout(tapTimer);
-
-        if (typeof window.__shareWeddingKakao === "function") {
-          window.__shareWeddingKakao();
-        }
+      if (typeof window.__shareWeddingKakao === "function") {
+        window.__shareWeddingKakao();
+      } else {
+        alert("카카오톡 공유 기능을 불러오는 중입니다. 잠시 후 다시 눌러주세요.");
       }
     });
 
     document.body.appendChild(button);
   }
 
-  window.addEventListener("DOMContentLoaded", createSecretShareButton);
-  window.addEventListener("load", createSecretShareButton);
+  window.addEventListener("DOMContentLoaded", createSmallKakaoShareButton);
+  window.addEventListener("load", createSmallKakaoShareButton);
 })();
