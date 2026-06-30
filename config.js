@@ -3,7 +3,7 @@ const CONFIG = {
 
   kakao: {
     jsKey: "ab0589cffa9e45b137dc4959a1d7e8b4",
-    shareUrl: "https://tuntu98914.github.io/",
+    shareUrl: "https://tuntu98914.github.io",
     imageUrl: "https://tuntu98914.github.io/images/hero/4.jpg"
   },
 
@@ -67,37 +67,31 @@ const CONFIG = {
   }
 };
 
-/* 기존 잔여 요소 정리 */
+/* =========================================================
+   공통
+========================================================= */
 (function () {
-  function cleanOldElements() {
-    [
-      "bgmButton",
-      "secretKakaoShareButton",
-      "forceHideCalendarStyle",
-      "extraWeddingButtons",
-      "tmapOnlySection",
-      "customMapButtons",
-      "customTransportInfo",
-      "smallBgmButton",
-      "smallKakaoShareButton",
-      "weddingStartOverlay",
-      "youtubeBgmPlayer"
-    ].forEach(function (id) {
-      const el = document.getElementById(id);
-      if (el) el.remove();
-    });
+  window.WEDDING_CUSTOM_VERSION = "2026-06-30-transport-kakao-fixed";
+
+  function normalizeText(value) {
+    return String(value || "")
+      .replace(/\s+/g, "")
+      .replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
+      .trim();
   }
 
-  window.addEventListener("DOMContentLoaded", cleanOldElements);
+  window.__normalizeWeddingText = normalizeText;
 })();
 
-/* BGM */
+/* =========================================================
+   BGM : 청첩장 열기 클릭 후 재생
+========================================================= */
 (function () {
-  let audio = null;
-  let isPlaying = false;
+  var audio = null;
+  var isPlaying = false;
 
   function updateBgmButton() {
-    const button = document.getElementById("smallBgmButton");
+    var button = document.getElementById("smallBgmButton");
     if (!button) return;
 
     if (isPlaying) {
@@ -110,7 +104,7 @@ const CONFIG = {
   }
 
   function stopBgm() {
-    const youtube = document.getElementById("youtubeBgmPlayer");
+    var youtube = document.getElementById("youtubeBgmPlayer");
     if (youtube) youtube.remove();
 
     if (audio) {
@@ -123,10 +117,10 @@ const CONFIG = {
   }
 
   function playYoutubeBgm() {
-    const old = document.getElementById("youtubeBgmPlayer");
+    var old = document.getElementById("youtubeBgmPlayer");
     if (old) old.remove();
 
-    const iframe = document.createElement("iframe");
+    var iframe = document.createElement("iframe");
     iframe.id = "youtubeBgmPlayer";
     iframe.src =
       "https://www.youtube.com/embed/" +
@@ -146,6 +140,7 @@ const CONFIG = {
     iframe.style.border = "0";
 
     document.body.appendChild(iframe);
+
     isPlaying = true;
     updateBgmButton();
   }
@@ -171,7 +166,7 @@ const CONFIG = {
   function createSmallBgmButton() {
     if (document.getElementById("smallBgmButton")) return;
 
-    const button = document.createElement("button");
+    var button = document.createElement("button");
     button.id = "smallBgmButton";
     button.type = "button";
     button.innerText = "♪";
@@ -210,7 +205,7 @@ const CONFIG = {
   function createStartOverlay() {
     if (document.getElementById("weddingStartOverlay")) return;
 
-    const overlay = document.createElement("div");
+    var overlay = document.createElement("div");
     overlay.id = "weddingStartOverlay";
 
     overlay.style.position = "fixed";
@@ -228,21 +223,21 @@ const CONFIG = {
     overlay.style.padding = "30px";
     overlay.style.boxSizing = "border-box";
 
-    const title = document.createElement("div");
-    title.innerText = `${CONFIG.groom.name} ♥ ${CONFIG.bride.name}`;
+    var title = document.createElement("div");
+    title.innerText = CONFIG.groom.name + " ♥ " + CONFIG.bride.name;
     title.style.fontSize = "22px";
     title.style.letterSpacing = "1px";
     title.style.color = "#333";
     title.style.marginBottom = "10px";
     title.style.fontWeight = "500";
 
-    const desc = document.createElement("div");
+    var desc = document.createElement("div");
     desc.innerText = "결혼식에 초대합니다";
     desc.style.fontSize = "14px";
     desc.style.color = "#777";
     desc.style.marginBottom = "28px";
 
-    const button = document.createElement("button");
+    var button = document.createElement("button");
     button.type = "button";
     button.innerText = "청첩장 열기";
 
@@ -271,119 +266,25 @@ const CONFIG = {
     overlay.appendChild(title);
     overlay.appendChild(desc);
     overlay.appendChild(button);
+
     document.body.appendChild(overlay);
   }
 
   window.addEventListener("DOMContentLoaded", function () {
     setTimeout(createStartOverlay, 300);
   });
-
-  window.addEventListener("load", function () {
-    setTimeout(createStartOverlay, 300);
-  });
 })();
 
-/* 카카오톡 공유 */
+/* =========================================================
+   카카오톡 공유
+========================================================= */
 (function () {
   function getShareUrl() {
     return CONFIG.kakao.shareUrl;
   }
 
   function getCalendarUrl() {
-    return CONFIG.kakao.shareUrl + "?calendar=1";
-  }
-
-  function formatICSDate(date, time) {
-    const cleanDate = date.replace(/-/g, "");
-    const cleanTime = time.replace(":", "") + "00";
-    return cleanDate + "T" + cleanTime;
-  }
-
-  function addHoursToTime(time, hoursToAdd) {
-    const [hour, minute] = time.split(":").map(Number);
-    const newHour = hour + hoursToAdd;
-    return String(newHour).padStart(2, "0") + ":" + String(minute).padStart(2, "0");
-  }
-
-  function escapeICS(text) {
-    return String(text || "")
-      .replace(/\\/g, "\\\\")
-      .replace(/\n/g, "\\n")
-      .replace(/,/g, "\\,")
-      .replace(/;/g, "\\;");
-  }
-
-  function createWeddingICS() {
-    const title = `${CONFIG.groom.name} ♥ ${CONFIG.bride.name} 결혼식`;
-    const location = `${CONFIG.wedding.venue} ${CONFIG.wedding.hall}, ${CONFIG.wedding.address}`;
-    const startDateTime = formatICSDate(CONFIG.wedding.date, CONFIG.wedding.time);
-    const endDateTime = formatICSDate(CONFIG.wedding.date, addHoursToTime(CONFIG.wedding.time, 2));
-
-    const description =
-      `${CONFIG.groom.name} ♥ ${CONFIG.bride.name} 결혼식\n` +
-      `일시: ${CONFIG.wedding.date} ${CONFIG.wedding.time}\n` +
-      `장소: ${CONFIG.wedding.venue} ${CONFIG.wedding.hall}\n` +
-      `주소: ${CONFIG.wedding.address}\n` +
-      `연락처: ${CONFIG.wedding.tel}`;
-
-    return [
-      "BEGIN:VCALENDAR",
-      "VERSION:2.0",
-      "PRODID:-//Wedding Invitation//KO",
-      "CALSCALE:GREGORIAN",
-      "METHOD:PUBLISH",
-      "BEGIN:VTIMEZONE",
-      "TZID:Asia/Seoul",
-      "BEGIN:STANDARD",
-      "DTSTART:19700101T000000",
-      "TZOFFSETFROM:+0900",
-      "TZOFFSETTO:+0900",
-      "TZNAME:KST",
-      "END:STANDARD",
-      "END:VTIMEZONE",
-      "BEGIN:VEVENT",
-      `UID:wedding-${CONFIG.wedding.date}-${CONFIG.groom.name}-${CONFIG.bride.name}@wedding`,
-      `DTSTART;TZID=Asia/Seoul:${startDateTime}`,
-      `DTEND;TZID=Asia/Seoul:${endDateTime}`,
-      `SUMMARY:${escapeICS(title)}`,
-      `LOCATION:${escapeICS(location)}`,
-      `DESCRIPTION:${escapeICS(description)}`,
-      "BEGIN:VALARM",
-      "TRIGGER:-P1D",
-      "ACTION:DISPLAY",
-      `DESCRIPTION:${escapeICS("내일 결혼식이 있습니다.")}`,
-      "END:VALARM",
-      "END:VEVENT",
-      "END:VCALENDAR"
-    ].join("\r\n");
-  }
-
-  function addWeddingSchedule() {
-    const blob = new Blob([createWeddingICS()], {
-      type: "text/calendar;charset=utf-8"
-    });
-
-    const url = URL.createObjectURL(blob);
-    const fileName = `${CONFIG.groom.name}-${CONFIG.bride.name}-결혼식.ics`;
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = fileName;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-
-    setTimeout(function () {
-      URL.revokeObjectURL(url);
-    }, 3000);
-  }
-
-  function checkCalendarParam() {
-    const params = new URLSearchParams(window.location.search);
-
-    if (params.get("calendar") === "1") {
-      setTimeout(addWeddingSchedule, 600);
-    }
+    return CONFIG.kakao.shareUrl;
   }
 
   function loadKakaoSDK(callback) {
@@ -392,7 +293,13 @@ const CONFIG = {
       return;
     }
 
-    const script = document.createElement("script");
+    var oldScript = document.getElementById("kakaoSdkScript");
+    if (oldScript) {
+      oldScript.remove();
+    }
+
+    var script = document.createElement("script");
+    script.id = "kakaoSdkScript";
     script.src = "https://t1.kakaocdn.net/kakao_js_sdk/2.7.5/kakao.min.js";
     script.onload = callback;
     script.onerror = function () {
@@ -411,8 +318,8 @@ const CONFIG = {
       window.Kakao.Share.sendDefault({
         objectType: "feed",
         content: {
-          title: `${CONFIG.groom.name} ♥ ${CONFIG.bride.name} 결혼합니다.`,
-          description: `2026년 10월 17일 토요일 오후 6시 · ${CONFIG.wedding.venue} ${CONFIG.wedding.hall}`,
+          title: CONFIG.groom.name + " ♥ " + CONFIG.bride.name + " 결혼합니다.",
+          description: "2026년 10월 17일 토요일 오후 6시 · " + CONFIG.wedding.venue + " " + CONFIG.wedding.hall,
           imageUrl: CONFIG.kakao.imageUrl,
           link: {
             mobileWebUrl: getShareUrl(),
@@ -440,356 +347,16 @@ const CONFIG = {
   }
 
   window.__shareWeddingKakao = shareKakaoWedding;
-  window.addEventListener("DOMContentLoaded", checkCalendarParam);
 })();
 
-/* 불필요 버튼 제거 */
-(function () {
-  function normalizeText(value) {
-    return String(value || "")
-      .replace(/\s+/g, "")
-      .replace(/[\u00A0\u200B-\u200D\uFEFF]/g, "")
-      .trim();
-  }
-
-  function removeUnwantedButtonsOnly() {
-    const elements = document.querySelectorAll("a, button, [role='button']");
-
-    elements.forEach(function (el) {
-      if (el.id === "smallKakaoShareButton") return;
-      if (el.id === "smallBgmButton") return;
-      if (el.closest && el.closest("#customMapButtons")) return;
-      if (el.closest && el.closest("#weddingStartOverlay")) return;
-
-      const text = normalizeText(el.innerText || el.textContent || "");
-      const href = el.getAttribute("href") || "";
-
-      const shouldRemove =
-        text === "카카오맵" ||
-        text === "네이버지도" ||
-        text === "Apple캘린더" ||
-        text === "애플캘린더" ||
-        text === "Google캘린더" ||
-        text === "구글캘린더" ||
-        text.includes("Apple캘린더") ||
-        text.includes("애플캘린더") ||
-        text.includes("Google캘린더") ||
-        text.includes("구글캘린더") ||
-        text === "카카오톡으로공유하기" ||
-        text === "카카오톡공유하기" ||
-        href.includes(".ics") ||
-        href.startsWith("webcal:") ||
-        href.includes("calendar.google.com") ||
-        href.includes("google.com/calendar");
-
-      if (shouldRemove) {
-        el.remove();
-      }
-    });
-  }
-
-  window.addEventListener("DOMContentLoaded", function () {
-    removeUnwantedButtonsOnly();
-    setTimeout(removeUnwantedButtonsOnly, 500);
-    setTimeout(removeUnwantedButtonsOnly, 1500);
-  });
-
-  window.addEventListener("load", function () {
-    removeUnwantedButtonsOnly();
-
-    const observer = new MutationObserver(removeUnwantedButtonsOnly);
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-  });
-})();
-
-/* 오시는 길 상세 안내 */
-(function () {
-  function createTransportTitle(icon, english, korean) {
-    const title = document.createElement("div");
-    title.style.display = "inline-flex";
-    title.style.alignItems = "center";
-    title.style.gap = "8px";
-    title.style.background = "#f5f3f1";
-    title.style.padding = "10px 14px";
-    title.style.margin = "22px 0 14px";
-    title.style.fontSize = "18px";
-    title.style.color = "#4a341f";
-    title.style.fontFamily = "serif";
-
-    const iconSpan = document.createElement("span");
-    iconSpan.innerText = icon;
-    iconSpan.style.fontSize = "20px";
-
-    const textSpan = document.createElement("span");
-    textSpan.innerHTML = `${english} <span style="font-family: inherit;">${korean}</span>`;
-
-    title.appendChild(iconSpan);
-    title.appendChild(textSpan);
-
-    return title;
-  }
-
-  function createBullet(text, color) {
-    const li = document.createElement("li");
-    li.innerText = text;
-    li.style.margin = "7px 0";
-    li.style.lineHeight = "1.7";
-    li.style.fontSize = "14px";
-    li.style.color = color || "#333";
-    return li;
-  }
-
-  function createTransportInfoElement() {
-    const section = document.createElement("section");
-    section.id = "customTransportInfo";
-    section.style.maxWidth = "520px";
-    section.style.margin = "24px auto 28px";
-    section.style.padding = "0 20px";
-    section.style.textAlign = "left";
-    section.style.boxSizing = "border-box";
-    section.style.color = "#333";
-
-    const subwayTitle = createTransportTitle("🚇", "Subway", "지하철");
-    const subwayList = document.createElement("ul");
-    subwayList.style.paddingLeft = "18px";
-    subwayList.style.margin = "0 0 14px";
-    subwayList.style.listStyleType = "circle";
-
-    subwayList.appendChild(createBullet("셔틀버스 운행 (20분 간격 운행)"));
-    subwayList.appendChild(createBullet("※ 도로교통상황에 따라 배차 간격이 길어질 수 있습니다.", "#e53935"));
-    subwayList.appendChild(createBullet("인천 2호선 아시아드경기장역 3번출구 앞 승차"));
-    subwayList.appendChild(createBullet("※ 공항철도 이용시 : 검암역 하차 ▶ 인천 2호선 환승 ▶ 아시아드경기장역 3번출구 앞 승차"));
-
-    const busTitle = createTransportTitle("🚌", "Bus", "버스");
-    const busList = document.createElement("ul");
-    busList.style.paddingLeft = "18px";
-    busList.style.margin = "0 0 14px";
-    busList.style.listStyleType = "circle";
-
-    busList.appendChild(createBullet("우성아파트 [42717] : 24-1, 70, 인천e음86, 111, 111B, 302, 310"));
-    busList.appendChild(createBullet("우성아파트 [42718] : 24-1, 70, 595, 인천e음86, 111, 111B, 302, 302B, 308, 310"));
-    busList.appendChild(createBullet("인천아시아드주경기장(동문) [89354] : 3-2, 71, 인천e음86"));
-    busList.appendChild(createBullet("인천아시아드주경기장(동문) [89359] : 3-2, 71, 인천e음86"));
-
-    const carTitle = createTransportTitle("🚗", "Car", "자가용");
-    const carList = document.createElement("ul");
-    carList.style.paddingLeft = "18px";
-    carList.style.margin = "0";
-    carList.style.listStyleType = "circle";
-
-    carList.appendChild(createBullet('네비게이션 : "아시아드웨딩컨벤션" 또는 "염곡로 725" 입력'));
-    carList.appendChild(createBullet("주차장 안내 : 인천아시아드주경기장 3번 게이트 앞 주차장 이용"));
-    carList.appendChild(createBullet("상담 방문시 3번 게이트 앞 주차장 이용시 웨딩홀과 가장 가깝습니다."));
-
-    section.appendChild(subwayTitle);
-    section.appendChild(subwayList);
-    section.appendChild(busTitle);
-    section.appendChild(busList);
-    section.appendChild(carTitle);
-    section.appendChild(carList);
-
-    return section;
-  }
-
-  function findTextNode(keyword) {
-    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    let node;
-
-    while ((node = walker.nextNode())) {
-      if ((node.nodeValue || "").includes(keyword)) {
-        return node;
-      }
-    }
-
-    return null;
-  }
-
-  function getInsertTarget() {
-    const telNode = findTextNode(CONFIG.wedding.tel);
-    const addressNode = findTextNode(CONFIG.wedding.address);
-
-    let el = null;
-
-    if (telNode && telNode.parentElement) {
-      el = telNode.parentElement;
-    } else if (addressNode && addressNode.parentElement) {
-      el = addressNode.parentElement;
-    }
-
-    if (!el) return null;
-
-    for (let i = 0; i < 5; i++) {
-      if (!el.parentElement || el.parentElement === document.body) break;
-
-      const parentText = el.parentElement.innerText || el.parentElement.textContent || "";
-
-      if (
-        parentText.includes(CONFIG.wedding.tel) &&
-        parentText.length < 700
-      ) {
-        el = el.parentElement;
-      } else {
-        break;
-      }
-    }
-
-    return el;
-  }
-
-  function createTransportInfo() {
-    const old = document.getElementById("customTransportInfo");
-    if (old) old.remove();
-
-    const section = createTransportInfoElement();
-    const target = getInsertTarget();
-
-    if (target) {
-      target.insertAdjacentElement("afterend", section);
-      return;
-    }
-
-    const locationSection =
-      document.querySelector("#location") ||
-      document.querySelector(".location") ||
-      document.querySelector("[data-section='location']") ||
-      document.querySelector(".map") ||
-      document.querySelector("#map") ||
-      document.body;
-
-    locationSection.appendChild(section);
-  }
-
-  window.addEventListener("DOMContentLoaded", function () {
-    setTimeout(createTransportInfo, 800);
-    setTimeout(createTransportInfo, 1800);
-    setTimeout(createTransportInfo, 3500);
-  });
-
-  window.addEventListener("load", function () {
-    setTimeout(createTransportInfo, 800);
-
-    const observer = new MutationObserver(function () {
-      if (!document.getElementById("customTransportInfo")) {
-        createTransportInfo();
-      }
-    });
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-  });
-})();
-
-/* 길찾기 버튼 */
-(function () {
-  const TMAP_ANDROID_STORE = "https://play.google.com/store/apps/details?id=com.skt.tmap.ku";
-  const TMAP_IOS_STORE = "https://apps.apple.com/kr/app/id431589174";
-
-  function openTmap() {
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-    if (!isMobile) {
-      alert("티맵 길안내는 모바일에서 이용 가능합니다.");
-      return;
-    }
-
-    const before = Date.now();
-    window.location.href = CONFIG.wedding.mapLinks.tmap;
-
-    setTimeout(function () {
-      const elapsed = Date.now() - before;
-
-      if (elapsed < 2200) {
-        if (/Android/i.test(navigator.userAgent)) {
-          window.location.href = TMAP_ANDROID_STORE;
-        } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-          window.location.href = TMAP_IOS_STORE;
-        }
-      }
-    }, 1500);
-  }
-
-  function createButton(text, onClick) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.innerText = text;
-
-    button.style.width = "100%";
-    button.style.maxWidth = "320px";
-    button.style.margin = "8px auto";
-    button.style.padding = "13px 16px";
-    button.style.border = "1px solid #ddd";
-    button.style.borderRadius = "999px";
-    button.style.background = "#fff";
-    button.style.color = "#333";
-    button.style.fontSize = "14px";
-    button.style.cursor = "pointer";
-    button.style.display = "block";
-    button.style.boxShadow = "0 3px 10px rgba(0,0,0,0.06)";
-
-    button.addEventListener("click", onClick);
-
-    return button;
-  }
-
-  function createMapButtons() {
-    const old = document.getElementById("customMapButtons");
-    if (old) old.remove();
-
-    const section = document.createElement("section");
-    section.id = "customMapButtons";
-    section.style.padding = "24px 20px 32px";
-    section.style.textAlign = "center";
-
-    const title = document.createElement("h3");
-    title.innerText = "길찾기";
-    title.style.margin = "0 0 16px";
-    title.style.fontSize = "18px";
-    title.style.fontWeight = "600";
-    title.style.color = "#333";
-
-    section.appendChild(title);
-
-    section.appendChild(createButton("카카오맵으로 보기", function () {
-      window.open(CONFIG.wedding.mapLinks.kakao, "_blank");
-    }));
-
-    section.appendChild(createButton("네이버지도 보기", function () {
-      window.open(CONFIG.wedding.mapLinks.naver, "_blank");
-    }));
-
-    section.appendChild(createButton("티맵 길안내", openTmap));
-
-    const locationSection =
-      document.querySelector("#location") ||
-      document.querySelector(".location") ||
-      document.querySelector("[data-section='location']") ||
-      document.querySelector(".map") ||
-      document.querySelector("#map") ||
-      document.body;
-
-    locationSection.appendChild(section);
-  }
-
-  window.addEventListener("DOMContentLoaded", function () {
-    setTimeout(createMapButtons, 1200);
-  });
-
-  window.addEventListener("load", function () {
-    setTimeout(createMapButtons, 1200);
-  });
-})();
-
-/* 작은 카카오톡 공유 버튼 */
+/* =========================================================
+   작은 카카오톡 공유 버튼
+========================================================= */
 (function () {
   function createSmallKakaoShareButton() {
     if (document.getElementById("smallKakaoShareButton")) return;
 
-    const button = document.createElement("button");
+    var button = document.createElement("button");
     button.id = "smallKakaoShareButton";
     button.type = "button";
     button.innerText = "카톡 공유";
@@ -821,6 +388,313 @@ const CONFIG = {
     document.body.appendChild(button);
   }
 
-  window.addEventListener("DOMContentLoaded", createSmallKakaoShareButton);
-  window.addEventListener("load", createSmallKakaoShareButton);
+  window.addEventListener("DOMContentLoaded", function () {
+    setTimeout(createSmallKakaoShareButton, 500);
+  });
+})();
+
+/* =========================================================
+   오시는 길 상세 안내
+   목표 위치:
+   주소 복사
+   ↓
+   지하철 / 버스 / 자가용
+   ↓
+   지도 이미지
+========================================================= */
+(function () {
+  function createTransportTitle(icon, english, korean) {
+    var title = document.createElement("div");
+    title.style.display = "inline-flex";
+    title.style.alignItems = "center";
+    title.style.gap = "8px";
+    title.style.background = "#f5f3f1";
+    title.style.padding = "10px 14px";
+    title.style.margin = "22px 0 14px";
+    title.style.fontSize = "18px";
+    title.style.color = "#4a341f";
+    title.style.fontFamily = "serif";
+
+    var iconSpan = document.createElement("span");
+    iconSpan.innerText = icon;
+    iconSpan.style.fontSize = "20px";
+
+    var textSpan = document.createElement("span");
+    textSpan.innerHTML = english + " <span style='font-family: inherit;'>" + korean + "</span>";
+
+    title.appendChild(iconSpan);
+    title.appendChild(textSpan);
+
+    return title;
+  }
+
+  function createBullet(text, color) {
+    var li = document.createElement("li");
+    li.innerText = text;
+    li.style.margin = "7px 0";
+    li.style.lineHeight = "1.7";
+    li.style.fontSize = "14px";
+    li.style.color = color || "#333";
+    return li;
+  }
+
+  function createTransportInfoElement() {
+    var section = document.createElement("section");
+    section.id = "customTransportInfo";
+    section.style.maxWidth = "520px";
+    section.style.margin = "18px auto 28px";
+    section.style.padding = "0 20px";
+    section.style.textAlign = "left";
+    section.style.boxSizing = "border-box";
+    section.style.color = "#333";
+
+    var subwayTitle = createTransportTitle("🚇", "Subway", "지하철");
+    var subwayList = document.createElement("ul");
+    subwayList.style.paddingLeft = "18px";
+    subwayList.style.margin = "0 0 14px";
+    subwayList.style.listStyleType = "circle";
+
+    subwayList.appendChild(createBullet("셔틀버스 운행 (20분 간격 운행)"));
+    subwayList.appendChild(createBullet("※ 도로교통상황에 따라 배차 간격이 길어질 수 있습니다.", "#e53935"));
+    subwayList.appendChild(createBullet("인천 2호선 아시아드경기장역 3번출구 앞 승차"));
+    subwayList.appendChild(createBullet("※ 공항철도 이용시 : 검암역 하차 ▶ 인천 2호선 환승 ▶ 아시아드경기장역 3번출구 앞 승차"));
+
+    var busTitle = createTransportTitle("🚌", "Bus", "버스");
+    var busList = document.createElement("ul");
+    busList.style.paddingLeft = "18px";
+    busList.style.margin = "0 0 14px";
+    busList.style.listStyleType = "circle";
+
+    busList.appendChild(createBullet("우성아파트 [42717] : 24-1, 70, 인천e음86, 111, 111B, 302, 310"));
+    busList.appendChild(createBullet("우성아파트 [42718] : 24-1, 70, 595, 인천e음86, 111, 111B, 302, 302B, 308, 310"));
+    busList.appendChild(createBullet("인천아시아드주경기장(동문) [89354] : 3-2, 71, 인천e음86"));
+    busList.appendChild(createBullet("인천아시아드주경기장(동문) [89359] : 3-2, 71, 인천e음86"));
+
+    var carTitle = createTransportTitle("🚗", "Car", "자가용");
+    var carList = document.createElement("ul");
+    carList.style.paddingLeft = "18px";
+    carList.style.margin = "0";
+    carList.style.listStyleType = "circle";
+
+    carList.appendChild(createBullet('네비게이션 : "아시아드웨딩컨벤션" 또는 "염곡로 725" 입력'));
+    carList.appendChild(createBullet("주차장 안내 : 인천아시아드주경기장 3번 게이트 앞 주차장 이용"));
+    carList.appendChild(createBullet("상담 방문시 3번 게이트 앞 주차장 이용시 웨딩홀과 가장 가깝습니다."));
+
+    section.appendChild(subwayTitle);
+    section.appendChild(subwayList);
+    section.appendChild(busTitle);
+    section.appendChild(busList);
+    section.appendChild(carTitle);
+    section.appendChild(carList);
+
+    return section;
+  }
+
+  function findMapImage() {
+    var images = Array.prototype.slice.call(document.querySelectorAll("img"));
+
+    for (var i = 0; i < images.length; i++) {
+      var img = images[i];
+      var src = img.getAttribute("src") || "";
+      var alt = img.getAttribute("alt") || "";
+
+      if (
+        src.indexOf("map") > -1 ||
+        src.indexOf("location") > -1 ||
+        alt.indexOf("지도") > -1 ||
+        alt.indexOf("약도") > -1
+      ) {
+        return img;
+      }
+    }
+
+    return null;
+  }
+
+  function findAddressCopyElement() {
+    var elements = Array.prototype.slice.call(document.querySelectorAll("button, a, div, span, p"));
+
+    for (var i = 0; i < elements.length; i++) {
+      var el = elements[i];
+      var text = window.__normalizeWeddingText(el.innerText || el.textContent || "");
+
+      if (text === "주소복사") {
+        return el;
+      }
+    }
+
+    return null;
+  }
+
+  function insertTransportInfo() {
+    if (document.getElementById("customTransportInfo")) return;
+
+    var info = createTransportInfoElement();
+    var copyElement = findAddressCopyElement();
+    var mapImage = findMapImage();
+
+    if (copyElement) {
+      var anchor = copyElement;
+
+      for (var i = 0; i < 3; i++) {
+        if (!anchor.parentElement || anchor.parentElement === document.body) break;
+
+        var parentText = anchor.parentElement.innerText || anchor.parentElement.textContent || "";
+
+        if (
+          parentText.indexOf("주소 복사") > -1 ||
+          parentText.indexOf("주소복사") > -1
+        ) {
+          anchor = anchor.parentElement;
+        } else {
+          break;
+        }
+      }
+
+      anchor.insertAdjacentElement("afterend", info);
+      return;
+    }
+
+    if (mapImage) {
+      mapImage.insertAdjacentElement("beforebegin", info);
+      return;
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", function () {
+    var count = 0;
+
+    var timer = setInterval(function () {
+      insertTransportInfo();
+
+      count += 1;
+
+      if (document.getElementById("customTransportInfo") || count > 30) {
+        clearInterval(timer);
+      }
+    }, 300);
+  });
+})();
+
+/* =========================================================
+   길찾기 버튼
+========================================================= */
+(function () {
+  var TMAP_ANDROID_STORE = "https://play.google.com/store/apps/details?id=com.skt.tmap.ku";
+  var TMAP_IOS_STORE = "https://apps.apple.com/kr/app/id431589174";
+
+  function openTmap() {
+    var isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    if (!isMobile) {
+      alert("티맵 길안내는 모바일에서 이용 가능합니다.");
+      return;
+    }
+
+    var before = Date.now();
+    window.location.href = CONFIG.wedding.mapLinks.tmap;
+
+    setTimeout(function () {
+      var elapsed = Date.now() - before;
+
+      if (elapsed < 2200) {
+        if (/Android/i.test(navigator.userAgent)) {
+          window.location.href = TMAP_ANDROID_STORE;
+        } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+          window.location.href = TMAP_IOS_STORE;
+        }
+      }
+    }, 1500);
+  }
+
+  function createButton(text, onClick) {
+    var button = document.createElement("button");
+    button.type = "button";
+    button.innerText = text;
+
+    button.style.width = "100%";
+    button.style.maxWidth = "320px";
+    button.style.margin = "8px auto";
+    button.style.padding = "13px 16px";
+    button.style.border = "1px solid #ddd";
+    button.style.borderRadius = "999px";
+    button.style.background = "#fff";
+    button.style.color = "#333";
+    button.style.fontSize = "14px";
+    button.style.cursor = "pointer";
+    button.style.display = "block";
+    button.style.boxShadow = "0 3px 10px rgba(0,0,0,0.06)";
+
+    button.addEventListener("click", onClick);
+
+    return button;
+  }
+
+  function findMapImage() {
+    var images = Array.prototype.slice.call(document.querySelectorAll("img"));
+
+    for (var i = 0; i < images.length; i++) {
+      var img = images[i];
+      var src = img.getAttribute("src") || "";
+      var alt = img.getAttribute("alt") || "";
+
+      if (
+        src.indexOf("map") > -1 ||
+        src.indexOf("location") > -1 ||
+        alt.indexOf("지도") > -1 ||
+        alt.indexOf("약도") > -1
+      ) {
+        return img;
+      }
+    }
+
+    return null;
+  }
+
+  function createMapButtons() {
+    if (document.getElementById("customMapButtons")) return;
+
+    var mapImage = findMapImage();
+    if (!mapImage) return;
+
+    var section = document.createElement("section");
+    section.id = "customMapButtons";
+    section.style.padding = "24px 20px 32px";
+    section.style.textAlign = "center";
+
+    var title = document.createElement("h3");
+    title.innerText = "길찾기";
+    title.style.margin = "0 0 16px";
+    title.style.fontSize = "18px";
+    title.style.fontWeight = "600";
+    title.style.color = "#333";
+
+    section.appendChild(title);
+
+    section.appendChild(createButton("카카오맵으로 보기", function () {
+      window.open(CONFIG.wedding.mapLinks.kakao, "_blank");
+    }));
+
+    section.appendChild(createButton("네이버지도 보기", function () {
+      window.open(CONFIG.wedding.mapLinks.naver, "_blank");
+    }));
+
+    section.appendChild(createButton("티맵 길안내", openTmap));
+
+    mapImage.insertAdjacentElement("afterend", section);
+  }
+
+  window.addEventListener("DOMContentLoaded", function () {
+    var count = 0;
+
+    var timer = setInterval(function () {
+      createMapButtons();
+
+      count += 1;
+
+      if (document.getElementById("customMapButtons") || count > 30) {
+        clearInterval(timer);
+      }
+    }, 300);
+  });
 })();
