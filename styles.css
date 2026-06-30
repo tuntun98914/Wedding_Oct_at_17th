@@ -975,3 +975,159 @@ a {
     transform: none !important;
   }
 }
+
+
+/* ═══════════════════════════════════════════
+   Custom Location / Share / BGM Fixes
+   ═══════════════════════════════════════════ */
+
+.location__transport {
+  max-width: 520px;
+  margin: 0 auto var(--spacing-lg);
+  padding: 0 0.25rem;
+  text-align: left;
+}
+
+.transport-block {
+  margin-bottom: var(--spacing-md);
+}
+
+.transport-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f5f3f1;
+  padding: 0.625rem 0.875rem;
+  margin: 0 0 0.875rem;
+  font-family: serif;
+  font-size: 1.125rem;
+  color: #4a341f;
+}
+
+.transport-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.transport-list {
+  padding-left: 1.125rem;
+  margin: 0;
+  list-style-type: circle;
+}
+
+.transport-list li {
+  margin: 0.4375rem 0;
+  line-height: 1.7;
+  font-size: 0.875rem;
+  font-weight: 300;
+  color: var(--color-text);
+}
+
+.transport-list .transport-notice {
+  color: #e53935;
+}
+
+.location__links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.location__links-title {
+  width: 100%;
+  margin: 0 0 0.75rem;
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.location__links .btn {
+  width: 100%;
+  max-width: 320px;
+  border-radius: 999px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+}
+
+.floating-kakao-share {
+  position: fixed;
+  left: 12px;
+  bottom: calc(12px + var(--safe-bottom));
+  z-index: 99999;
+  padding: 7px 10px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 999px;
+  background: rgba(254, 229, 0, 0.92);
+  color: #222;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+  opacity: 0.9;
+}
+
+.floating-bgm-btn {
+  position: fixed;
+  right: 12px;
+  bottom: calc(12px + var(--safe-bottom));
+  z-index: 99999;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  font-size: 16px;
+  line-height: 1;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.12);
+  opacity: 0.9;
+}
+
+.floating-bgm-btn.is-playing {
+  background: rgba(254, 229, 0, 0.95);
+}
+
+.wedding-start-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 30px;
+  background: rgba(255, 255, 255, 0.96);
+  transition: opacity 0.35s ease;
+}
+
+.wedding-start-overlay.is-hide {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wedding-start-overlay__title {
+  margin-bottom: 0.625rem;
+  font-size: 1.375rem;
+  font-weight: 500;
+  letter-spacing: 1px;
+  color: var(--color-text);
+}
+
+.wedding-start-overlay__desc {
+  margin-bottom: 1.75rem;
+  font-size: 0.875rem;
+  color: var(--color-text-light);
+}
+
+.wedding-start-overlay__btn {
+  width: 180px;
+  height: 46px;
+  border: 1px solid var(--color-divider);
+  border-radius: 999px;
+  background: var(--color-white);
+  color: var(--color-text);
+  font-size: 0.9375rem;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}

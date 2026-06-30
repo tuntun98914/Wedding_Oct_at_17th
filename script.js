@@ -111,13 +111,16 @@
   function setMetaTags() {
     const m = CONFIG.meta;
     document.title = m.title;
+
     const setMeta = (attr, val, content) => {
       const el = document.querySelector(`meta[${attr}="${val}"]`);
       if (el) el.setAttribute('content', content);
     };
+
     setMeta('property', 'og:title', m.title);
     setMeta('property', 'og:description', m.description);
-    setMeta('property', 'og:image', 'images/og/12.jpg');
+    setMeta('property', 'og:image', CONFIG.kakao.imageUrl);
+    setMeta('property', 'og:url', CONFIG.kakao.shareUrl);
     setMeta('name', 'description', m.description);
   }
 
@@ -241,12 +244,12 @@
     const weddingDay = dt.getDate();
 
     const grid = $('#calendarGrid');
+    if (!grid) return;
 
     const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
       'July', 'August', 'September', 'October', 'November', 'December'];
     grid.innerHTML = `<div class="calendar__header">${monthNames[month]} ${year}</div>`;
 
-    // Weekdays
     const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
     const wdRow = document.createElement('div');
     wdRow.className = 'calendar__weekdays';
@@ -258,7 +261,6 @@
     });
     grid.appendChild(wdRow);
 
-    // Days
     const daysContainer = document.createElement('div');
     daysContainer.className = 'calendar__days';
 
@@ -280,39 +282,6 @@
     }
 
     grid.appendChild(daysContainer);
-
-    // Google Calendar link
-    const startDate = dt.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-    const endDt = new Date(dt.getTime() + 2 * 60 * 60 * 1000);
-    const endDate = endDt.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-    const gcalUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(CONFIG.groom.name + ' ♥ ' + CONFIG.bride.name + ' 결혼식')}&dates=${startDate}/${endDate}&location=${encodeURIComponent(CONFIG.wedding.venue + ' ' + CONFIG.wedding.address)}&details=${encodeURIComponent('결혼식에 초대합니다.')}`;
-    $('#googleCalBtn').href = gcalUrl;
-
-    // ICS download (Apple Calendar)
-    $('#icsDownloadBtn').addEventListener('click', () => {
-      const icsContent = [
-        'BEGIN:VCALENDAR',
-        'VERSION:2.0',
-        'PRODID:-//Wedding//Invitation//KO',
-        'BEGIN:VEVENT',
-        `DTSTART:${startDate}`,
-        `DTEND:${endDate}`,
-        `SUMMARY:${CONFIG.groom.name} ♥ ${CONFIG.bride.name} 결혼식`,
-        `LOCATION:${CONFIG.wedding.venue} ${CONFIG.wedding.address}`,
-        'DESCRIPTION:결혼식에 초대합니다.',
-        'END:VEVENT',
-        'END:VCALENDAR'
-      ].join('\r\n');
-
-      const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'wedding.ics';
-      a.click();
-      URL.revokeObjectURL(url);
-      showToast('캘린더 파일이 다운로드됩니다');
-    });
   }
 
   /* ═══════════════════════════════════════════
@@ -459,17 +428,295 @@
 
   function initLocation() {
     const w = CONFIG.wedding;
+
     $('#locationVenue').textContent = w.venue;
     $('#locationHall').textContent = w.hall;
     $('#locationAddress').textContent = w.address;
     $('#locationTel').textContent = w.tel ? `Tel. ${w.tel}` : '';
     $('#locationMapImg').src = 'images/location/map.jpg';
-    $('#kakaoMapBtn').href = w.mapLinks.kakao || '#';
-    $('#naverMapBtn').href = w.mapLinks.naver || '#';
+
+    const kakaoBtn = $('#kakaoMapBtn');
+    const naverBtn = $('#naverMapBtn');
+    const tmapBtn = $('#tmapBtn');
+
+    if (kakaoBtn) kakaoBtn.href = w.mapLinks.kakao || '#';
+    if (naverBtn) naverBtn.href = w.mapLinks.naver || '#';
+
+    if (tmapBtn) {
+      tmapBtn.addEventListener('click', () => {
+        const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+        if (!isMobile) {
+          showToast('티맵 길안내는 모바일에서 이용 가능합니다');
+          return;
+        }
+
+        const before = Date.now();
+        window.location.href = w.mapLinks.tmap;
+
+        setTimeout(() => {
+          if (Date.now() - before > 2200) return;
+
+          if (/Android/i.test(navigator.userAgent)) {
+            window.location.href = 'https://play.google.com/store/apps/details?id=com.skt.tmap.ku';
+          } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            window.location.href = 'https://apps.apple.com/kr/app/id431589174';
+          }
+        }, 1500);
+      });
+    }
 
     $('#copyAddressBtn').addEventListener('click', () => {
       copyToClipboard(w.address, '주소가 복사되었습니다');
     });
+  }
+
+  /* ═══════════════════════════════════════════
+     BGM
+     ═══════════════════════════════════════════ */
+
+  function initBgm() {
+    let audio = null;
+    let isPlaying = false;
+
+    function updateButton() {
+      const btn = $('#smallBgmButton');
+      if (!btn) return;
+      btn.textContent = isPlaying ? 'Ⅱ' : '♪';
+      btn.classList.toggle('is-playing', isPlaying);
+    }
+
+    function stopBgm() {
+      const youtube = $('#youtubeBgmPlayer');
+      if (youtube) youtube.remove();
+
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+
+      isPlaying = false;
+      updateButton();
+    }
+
+    function playYoutube() {
+      const old = $('#youtubeBgmPlayer');
+      if (old) old.remove();
+
+      const iframe = document.createElement('iframe');
+      iframe.id = 'youtubeBgmPlayer';
+      iframe.src =
+        'https://www.youtube.com/embed/' +
+        CONFIG.bgm.youtubeVideoId +
+        '?autoplay=1&loop=1&playlist=' +
+        CONFIG.bgm.youtubeVideoId +
+        '&controls=0&modestbranding=1&playsinline=1&rel=0';
+      iframe.allow = 'autoplay; encrypted-media';
+      iframe.setAttribute('aria-hidden', 'true');
+      iframe.style.cssText = 'position:fixed;width:1px;height:1px;left:-9999px;top:-9999px;opacity:0;pointer-events:none;border:0;';
+      document.body.appendChild(iframe);
+
+      isPlaying = true;
+      updateButton();
+    }
+
+    function playBgm() {
+      if (!audio) {
+        audio = new Audio(CONFIG.bgm.mp3Url);
+        audio.loop = true;
+        audio.preload = 'auto';
+        audio.volume = 0.75;
+      }
+
+      audio.play()
+        .then(() => {
+          isPlaying = true;
+          updateButton();
+        })
+        .catch(() => {
+          playYoutube();
+        });
+    }
+
+    function createBgmButton() {
+      if ($('#smallBgmButton')) return;
+
+      const btn = document.createElement('button');
+      btn.id = 'smallBgmButton';
+      btn.type = 'button';
+      btn.className = 'floating-bgm-btn';
+      btn.textContent = '♪';
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (isPlaying) stopBgm();
+        else playBgm();
+      });
+
+      document.body.appendChild(btn);
+      updateButton();
+    }
+
+    function createStartOverlay() {
+      if ($('#weddingStartOverlay')) return;
+
+      const overlay = document.createElement('div');
+      overlay.id = 'weddingStartOverlay';
+      overlay.className = 'wedding-start-overlay';
+
+      overlay.innerHTML = `
+        <div class="wedding-start-overlay__title">${CONFIG.groom.name} ♥ ${CONFIG.bride.name}</div>
+        <div class="wedding-start-overlay__desc">결혼식에 초대합니다</div>
+        <button type="button" class="wedding-start-overlay__btn">청첩장 열기</button>
+      `;
+
+      overlay.querySelector('button').addEventListener('click', () => {
+        createBgmButton();
+        playBgm();
+
+        overlay.classList.add('is-hide');
+        setTimeout(() => overlay.remove(), 350);
+      });
+
+      document.body.appendChild(overlay);
+    }
+
+    createStartOverlay();
+  }
+
+  /* ═══════════════════════════════════════════
+     Kakao Share
+     ═══════════════════════════════════════════ */
+
+  function initKakaoShare() {
+    function loadKakaoSDK(callback) {
+      if (window.Kakao && window.Kakao.Share) {
+        callback();
+        return;
+      }
+
+      const oldScript = $('#kakaoSdkScript');
+      if (oldScript) oldScript.remove();
+
+      const script = document.createElement('script');
+      script.id = 'kakaoSdkScript';
+      script.src = 'https://t1.kakaocdn.net/kakao_js_sdk/2.7.5/kakao.min.js';
+      script.onload = callback;
+      script.onerror = () => showToast('카카오 SDK 로드 실패');
+      document.head.appendChild(script);
+    }
+
+    function getCalendarUrl() {
+      return `${CONFIG.kakao.shareUrl}?calendar=1`;
+    }
+
+    function shareKakaoWedding() {
+      loadKakaoSDK(() => {
+        if (!window.Kakao.isInitialized()) {
+          window.Kakao.init(CONFIG.kakao.jsKey);
+        }
+
+        window.Kakao.Share.sendDefault({
+          objectType: 'feed',
+          content: {
+            title: `${CONFIG.groom.name} ♥ ${CONFIG.bride.name} 결혼합니다.`,
+            description: `2026년 10월 17일 토요일 오후 6시 · ${CONFIG.wedding.venue} ${CONFIG.wedding.hall}`,
+            imageUrl: CONFIG.kakao.imageUrl,
+            link: {
+              mobileWebUrl: CONFIG.kakao.shareUrl,
+              webUrl: CONFIG.kakao.shareUrl
+            }
+          },
+          buttons: [
+            {
+              title: '청첩장 보기',
+              link: {
+                mobileWebUrl: CONFIG.kakao.shareUrl,
+                webUrl: CONFIG.kakao.shareUrl
+              }
+            },
+            {
+              title: '일정 등록하기',
+              link: {
+                mobileWebUrl: getCalendarUrl(),
+                webUrl: getCalendarUrl()
+              }
+            }
+          ]
+        });
+      });
+    }
+
+    function downloadWeddingCalendarIfRequested() {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('calendar') !== '1') return;
+
+      const start = getWeddingDateTime();
+      const end = new Date(start.getTime() + 2 * 60 * 60 * 1000);
+      const pad = (n) => String(n).padStart(2, '0');
+      const formatLocal = (d) => `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+      const escapeICS = (value) => String(value || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/\n/g, '\\n')
+        .replace(/,/g, '\\,')
+        .replace(/;/g, '\\;');
+
+      const title = `${CONFIG.groom.name} ♥ ${CONFIG.bride.name} 결혼식`;
+      const location = `${CONFIG.wedding.venue} ${CONFIG.wedding.hall}, ${CONFIG.wedding.address}`;
+      const description = `${CONFIG.groom.name} ♥ ${CONFIG.bride.name} 결혼식
+일시: ${formatDate(CONFIG.wedding.date, CONFIG.wedding.time)}
+장소: ${CONFIG.wedding.venue} ${CONFIG.wedding.hall}
+주소: ${CONFIG.wedding.address}`;
+
+      const icsContent = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//Wedding Invitation//KO',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        'BEGIN:VEVENT',
+        `UID:wedding-${CONFIG.wedding.date}-${CONFIG.groom.name}-${CONFIG.bride.name}@wedding`,
+        `DTSTART;TZID=Asia/Seoul:${formatLocal(start)}`,
+        `DTEND;TZID=Asia/Seoul:${formatLocal(end)}`,
+        `SUMMARY:${escapeICS(title)}`,
+        `LOCATION:${escapeICS(location)}`,
+        `DESCRIPTION:${escapeICS(description)}`,
+        'BEGIN:VALARM',
+        'TRIGGER:-P1D',
+        'ACTION:DISPLAY',
+        `DESCRIPTION:${escapeICS('내일 결혼식이 있습니다.')}`,
+        'END:VALARM',
+        'END:VEVENT',
+        'END:VCALENDAR'
+      ].join('\r\n');
+
+      setTimeout(() => {
+        const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${CONFIG.groom.name}-${CONFIG.bride.name}-결혼식.ics`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        showToast('캘린더 파일이 다운로드됩니다');
+      }, 800);
+    }
+
+    window.__shareWeddingKakao = shareKakaoWedding;
+
+    if (!$('#smallKakaoShareButton')) {
+      const btn = document.createElement('button');
+      btn.id = 'smallKakaoShareButton';
+      btn.type = 'button';
+      btn.className = 'floating-kakao-share';
+      btn.textContent = '카톡 공유';
+      btn.addEventListener('click', shareKakaoWedding);
+      document.body.appendChild(btn);
+    }
+
+    downloadWeddingCalendarIfRequested();
   }
 
   /* ═══════════════════════════════════════════
@@ -611,6 +858,8 @@
 
     initPhotoModal();
     initLocation();
+    initBgm();
+    initKakaoShare();
     initAccounts();
     initFooter();
     initScrollAnimations();

@@ -5,22 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="format-detection" content="telephone=no">
 
-  <!-- Meta / OG tags - config.js 값으로 script에서 동적 설정 -->
+  <!-- Kakao / Open Graph static tags: 카카오 크롤러는 JS 실행 전 meta를 읽습니다 -->
   <meta property="og:type" content="website">
-  <meta property="og:title" content="">
-  <meta property="og:description" content="">
-  <meta property="og:image" content="">
-  <meta name="description" content="">
+  <meta property="og:site_name" content="조승우 ♥ 이수민 결혼식">
+  <meta property="og:title" content="조승우 ♥ 이수민 결혼합니다.">
+  <meta property="og:description" content="2026년 10월 17일 토요일 오후 6시 · 아시아드 웨딩컨벤션, 인천 비아벨라홀">
+  <meta property="og:image" content="https://tuntun98914.github.io/Wedding_Oct_at_17th/images/hero/4.jpg?v=20260630-3">
+  <meta property="og:image:width" content="800">
+  <meta property="og:image:height" content="800">
+  <meta property="og:url" content="https://tuntun98914.github.io/Wedding_Oct_at_17th/">
+  <meta name="description" content="2026년 10월 17일, 소중한 분들을 초대합니다.">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="조승우 ♥ 이수민 결혼합니다.">
+  <meta name="twitter:description" content="2026년 10월 17일 토요일 오후 6시 · 아시아드 웨딩컨벤션, 인천 비아벨라홀">
+  <meta name="twitter:image" content="https://tuntun98914.github.io/Wedding_Oct_at_17th/images/hero/4.jpg?v=20260630-3">
 
-  <title>Wedding Invitation</title>
+  <title>조승우 ♥ 이수민 결혼합니다</title>
 
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css">
-  <script src="config.js"></script>
+  <link rel="stylesheet" href="styles.css?v=20260630-3">
+  <script src="config.js?v=20260630-3"></script>
 </head>
 <body>
 
@@ -121,33 +129,66 @@
       <div class="section__inner">
         <h2 class="section__title animate-item" data-animate="fade-up">오시는 길</h2>
         <div class="section__divider animate-item" data-animate="fade-in"></div>
+
         <div class="location__info animate-item" data-animate="fade-up">
           <p class="location__venue" id="locationVenue"></p>
           <p class="location__hall" id="locationHall"></p>
           <p class="location__address" id="locationAddress"></p>
           <p class="location__tel" id="locationTel"></p>
         </div>
+
         <button class="btn btn--text location__copy animate-item" data-animate="fade-up" id="copyAddressBtn">주소 복사</button>
+
+        <div class="location__transport animate-item" data-animate="fade-up" id="locationTransport">
+          <div class="transport-block">
+            <div class="transport-title"><span class="transport-icon">🚇</span><span>Subway 지하철</span></div>
+            <ul class="transport-list">
+              <li>셔틀버스 운행 (20분 간격 운행)</li>
+              <li class="transport-notice">※ 도로교통상황에 따라 배차 간격이 길어질 수 있습니다.</li>
+              <li>인천 2호선 아시아드경기장역 3번출구 앞 승차</li>
+              <li>※ 공항철도 이용시 : 검암역 하차 ▶ 인천 2호선 환승 ▶ 아시아드경기장역 3번출구 앞 승차</li>
+            </ul>
+          </div>
+
+          <div class="transport-block">
+            <div class="transport-title"><span class="transport-icon">🚌</span><span>Bus 버스</span></div>
+            <ul class="transport-list">
+              <li>우성아파트 [42717] : 24-1, 70, 인천e음86, 111, 111B, 302, 310</li>
+              <li>우성아파트 [42718] : 24-1, 70, 595, 인천e음86, 111, 111B, 302, 302B, 308, 310</li>
+              <li>인천아시아드주경기장(동문) [89354] : 3-2, 71, 인천e음86</li>
+              <li>인천아시아드주경기장(동문) [89359] : 3-2, 71, 인천e음86</li>
+            </ul>
+          </div>
+
+          <div class="transport-block">
+            <div class="transport-title"><span class="transport-icon">🚗</span><span>Car 자가용</span></div>
+            <ul class="transport-list">
+              <li>네비게이션 : "아시아드웨딩컨벤션" 또는 "염곡로 725" 입력</li>
+              <li>주차장 안내 : 인천아시아드주경기장 3번 게이트 앞 주차장 이용</li>
+              <li>상담 방문시 3번 게이트 앞 주차장 이용시 웨딩홀과 가장 가깝습니다.</li>
+            </ul>
+          </div>
+        </div>
+
         <div class="location__map animate-item" data-animate="fade-in">
           <img class="location__map-img" id="locationMapImg" src="" alt="약도" loading="lazy">
         </div>
+
         <div class="location__links animate-item" data-animate="fade-up">
-          <a class="btn btn--outline" id="kakaoMapBtn" href="#" target="_blank" rel="noopener">카카오맵</a>
-          <a class="btn btn--outline" id="naverMapBtn" href="#" target="_blank" rel="noopener">네이버지도</a>
+          <h3 class="location__links-title">길찾기</h3>
+          <a class="btn btn--outline" id="kakaoMapBtn" href="#" target="_blank" rel="noopener">카카오맵으로 보기</a>
+          <a class="btn btn--outline" id="naverMapBtn" href="#" target="_blank" rel="noopener">네이버지도 보기</a>
+          <button class="btn btn--outline" id="tmapBtn" type="button">티맵 길안내</button>
         </div>
       </div>
     </section>
 
-    <!-- Calendar Actions -->
+    <!-- Calendar Section -->
     <section class="section calendar-section" id="calendarSection">
       <div class="section__inner">
         <h2 class="section__title animate-item" data-animate="fade-up">예식 일시</h2>
         <div class="section__divider animate-item" data-animate="fade-in"></div>
         <div class="calendar animate-item" data-animate="fade-up" id="calendarGrid"></div>
-        <div class="calendar-actions animate-item" data-animate="fade-up">
-          <a class="btn btn--outline" id="googleCalBtn" href="#" target="_blank" rel="noopener">Google 캘린더</a>
-          <button class="btn btn--outline" id="icsDownloadBtn">Apple 캘린더</button>
-        </div>
       </div>
     </section>
 
@@ -189,6 +230,6 @@
 
   </main>
 
-  <script src="script.js"></script>
+  <script src="script.js?v=20260630-3"></script>
 </body>
 </html>
