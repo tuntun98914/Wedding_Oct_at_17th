@@ -62,7 +62,7 @@ const CONFIG = {
   }
 };
 
-/* ── 이전 코드 잔여 버튼/스타일 정리 ── */
+/* ── 이전 코드 잔여 요소 정리 ── */
 (function () {
   function cleanOldElements() {
     const ids = [
@@ -70,7 +70,12 @@ const CONFIG = {
       "secretKakaoShareButton",
       "forceHideCalendarStyle",
       "extraWeddingButtons",
-      "tmapOnlySection"
+      "tmapOnlySection",
+      "customMapButtons",
+      "customTransportInfo",
+      "smallBgmButton",
+      "smallKakaoShareButton",
+      "weddingStartOverlay"
     ];
 
     ids.forEach(function (id) {
@@ -106,27 +111,28 @@ const CONFIG = {
   }
 
   window.addEventListener("DOMContentLoaded", cleanOldElements);
-  window.addEventListener("load", cleanOldElements);
 })();
 
-/* ── BGM 자동 재생 : YouTube ── */
+/* ── BGM : 입장 버튼 클릭 시 강제 재생 구조 ── */
 (function () {
   const YOUTUBE_VIDEO_ID = "7iAKkbEWHfA";
-  let userGestureTried = false;
+  let isPlaying = false;
 
-  function removeOldBgmButton() {
-    const oldButton = document.getElementById("bgmButton");
-    if (oldButton) oldButton.remove();
+  function removeBgmPlayer() {
+    const player = document.getElementById("youtubeBgmPlayer");
+    if (player) player.remove();
+    isPlaying = false;
+    updateBgmButton();
   }
 
   function createYoutubeBgmPlayer(forceRestart) {
-    removeOldBgmButton();
-
     const existingPlayer = document.getElementById("youtubeBgmPlayer");
 
     if (existingPlayer && forceRestart) {
       existingPlayer.remove();
     } else if (existingPlayer) {
+      isPlaying = true;
+      updateBgmButton();
       return;
     }
 
@@ -152,32 +158,138 @@ const CONFIG = {
     iframe.style.border = "0";
 
     document.body.appendChild(iframe);
+    isPlaying = true;
+    updateBgmButton();
   }
 
-  function startBgmAuto() {
-    createYoutubeBgmPlayer(false);
+  function createSmallBgmButton() {
+    if (document.getElementById("smallBgmButton")) return;
+
+    const button = document.createElement("button");
+    button.id = "smallBgmButton";
+    button.type = "button";
+    button.innerText = "Ⅱ";
+
+    button.style.position = "fixed";
+    button.style.right = "12px";
+    button.style.bottom = "12px";
+    button.style.zIndex = "999999";
+    button.style.width = "34px";
+    button.style.height = "34px";
+    button.style.border = "1px solid rgba(0,0,0,0.12)";
+    button.style.borderRadius = "50%";
+    button.style.background = "rgba(254,229,0,0.95)";
+    button.style.color = "#333";
+    button.style.fontSize = "15px";
+    button.style.lineHeight = "1";
+    button.style.cursor = "pointer";
+    button.style.boxShadow = "0 3px 10px rgba(0,0,0,0.12)";
+    button.style.opacity = "0.85";
+
+    button.addEventListener("click", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+
+      if (isPlaying) {
+        removeBgmPlayer();
+      } else {
+        createYoutubeBgmPlayer(true);
+      }
+
+      updateBgmButton();
+    });
+
+    document.body.appendChild(button);
+    updateBgmButton();
   }
 
-  function startBgmByFirstAction() {
-    if (userGestureTried) return;
-    userGestureTried = true;
-    createYoutubeBgmPlayer(true);
+  function updateBgmButton() {
+    const button = document.getElementById("smallBgmButton");
+    if (!button) return;
+
+    if (isPlaying) {
+      button.innerText = "Ⅱ";
+      button.style.background = "rgba(254,229,0,0.95)";
+    } else {
+      button.innerText = "♪";
+      button.style.background = "rgba(255,255,255,0.9)";
+    }
+  }
+
+  function createStartOverlay() {
+    if (document.getElementById("weddingStartOverlay")) return;
+
+    const overlay = document.createElement("div");
+    overlay.id = "weddingStartOverlay";
+
+    overlay.style.position = "fixed";
+    overlay.style.left = "0";
+    overlay.style.top = "0";
+    overlay.style.width = "100%";
+    overlay.style.height = "100%";
+    overlay.style.zIndex = "9999999";
+    overlay.style.background = "rgba(255,255,255,0.96)";
+    overlay.style.display = "flex";
+    overlay.style.flexDirection = "column";
+    overlay.style.alignItems = "center";
+    overlay.style.justifyContent = "center";
+    overlay.style.textAlign = "center";
+    overlay.style.padding = "30px";
+    overlay.style.boxSizing = "border-box";
+
+    const title = document.createElement("div");
+    title.innerText = `${CONFIG.groom.name} ♥ ${CONFIG.bride.name}`;
+    title.style.fontSize = "22px";
+    title.style.letterSpacing = "1px";
+    title.style.color = "#333";
+    title.style.marginBottom = "10px";
+    title.style.fontWeight = "500";
+
+    const desc = document.createElement("div");
+    desc.innerText = "결혼식에 초대합니다";
+    desc.style.fontSize = "14px";
+    desc.style.color = "#777";
+    desc.style.marginBottom = "28px";
+
+    const button = document.createElement("button");
+    button.type = "button";
+    button.innerText = "청첩장 열기";
+
+    button.style.width = "180px";
+    button.style.height = "46px";
+    button.style.border = "1px solid #ddd";
+    button.style.borderRadius = "999px";
+    button.style.background = "#fff";
+    button.style.color = "#333";
+    button.style.fontSize = "15px";
+    button.style.cursor = "pointer";
+    button.style.boxShadow = "0 4px 14px rgba(0,0,0,0.08)";
+
+    button.addEventListener("click", function () {
+      createYoutubeBgmPlayer(true);
+      createSmallBgmButton();
+
+      overlay.style.opacity = "0";
+      overlay.style.transition = "opacity 0.35s ease";
+
+      setTimeout(function () {
+        overlay.remove();
+      }, 350);
+    });
+
+    overlay.appendChild(title);
+    overlay.appendChild(desc);
+    overlay.appendChild(button);
+    document.body.appendChild(overlay);
   }
 
   window.addEventListener("DOMContentLoaded", function () {
-    removeOldBgmButton();
-    setTimeout(startBgmAuto, 300);
-    setTimeout(startBgmAuto, 1000);
+    createStartOverlay();
   });
 
   window.addEventListener("load", function () {
-    removeOldBgmButton();
-    setTimeout(startBgmAuto, 300);
+    createStartOverlay();
   });
-
-  document.addEventListener("click", startBgmByFirstAction, { once: true });
-  document.addEventListener("touchstart", startBgmByFirstAction, { once: true });
-  document.addEventListener("scroll", startBgmByFirstAction, { once: true });
 })();
 
 /* ── 카카오톡 공유 메시지 + 일정 등록 기능 ── */
@@ -376,7 +488,6 @@ const CONFIG = {
   }
 
   window.__shareWeddingKakao = shareKakaoWedding;
-
   window.addEventListener("DOMContentLoaded", checkCalendarParam);
 })();
 
@@ -394,7 +505,9 @@ const CONFIG = {
 
     elements.forEach(function (el) {
       if (el.id === "smallKakaoShareButton") return;
+      if (el.id === "smallBgmButton") return;
       if (el.closest && el.closest("#customMapButtons")) return;
+      if (el.closest && el.closest("#weddingStartOverlay")) return;
 
       const text = normalizeText(el.innerText || el.textContent || "");
       const href = el.getAttribute("href") || "";
@@ -467,6 +580,130 @@ const CONFIG = {
       childList: true,
       subtree: true
     });
+  });
+})();
+
+/* ── 오시는 길 상세 안내 추가 ── */
+(function () {
+  function createTransportTitle(icon, english, korean) {
+    const title = document.createElement("div");
+    title.style.display = "inline-flex";
+    title.style.alignItems = "center";
+    title.style.gap = "8px";
+    title.style.background = "#f5f3f1";
+    title.style.padding = "10px 14px";
+    title.style.margin = "22px 0 14px";
+    title.style.fontSize = "18px";
+    title.style.color = "#4a341f";
+    title.style.fontFamily = "serif";
+
+    const iconSpan = document.createElement("span");
+    iconSpan.innerText = icon;
+    iconSpan.style.fontSize = "20px";
+
+    const textSpan = document.createElement("span");
+    textSpan.innerHTML = `${english} <span style="font-family: inherit;">${korean}</span>`;
+
+    title.appendChild(iconSpan);
+    title.appendChild(textSpan);
+
+    return title;
+  }
+
+  function createBullet(text, color) {
+    const li = document.createElement("li");
+    li.innerText = text;
+    li.style.margin = "7px 0";
+    li.style.lineHeight = "1.7";
+    li.style.fontSize = "14px";
+    li.style.color = color || "#333";
+    return li;
+  }
+
+  function createTransportInfo() {
+    if (document.getElementById("customTransportInfo")) return;
+
+    const section = document.createElement("section");
+    section.id = "customTransportInfo";
+    section.style.maxWidth = "520px";
+    section.style.margin = "28px auto 20px";
+    section.style.padding = "0 20px";
+    section.style.textAlign = "left";
+    section.style.boxSizing = "border-box";
+    section.style.color = "#333";
+
+    const subwayTitle = createTransportTitle("🚇", "Subway", "지하철");
+    const subwayList = document.createElement("ul");
+    subwayList.style.paddingLeft = "18px";
+    subwayList.style.margin = "0 0 14px";
+    subwayList.style.listStyleType = "circle";
+
+    subwayList.appendChild(createBullet("셔틀버스 운행 (20분 간격 운행)"));
+    subwayList.appendChild(createBullet("※ 도로교통상황에 따라 배차 간격이 길어질 수 있습니다.", "#e53935"));
+    subwayList.appendChild(createBullet("인천 2호선 아시아드경기장역 3번출구 앞 승차"));
+    subwayList.appendChild(createBullet("※ 공항철도 이용시 : 검암역 하차 ▶ 인천 2호선 환승 ▶ 아시아드경기장역 3번출구 앞 승차"));
+
+    const busTitle = createTransportTitle("🚌", "Bus", "버스");
+    const busList = document.createElement("ul");
+    busList.style.paddingLeft = "18px";
+    busList.style.margin = "0 0 14px";
+    busList.style.listStyleType = "circle";
+
+    busList.appendChild(createBullet("우성아파트 [42717] : 24-1, 70, 인천e음86, 111, 111B, 302, 310"));
+    busList.appendChild(createBullet("우성아파트 [42718] : 24-1, 70, 595, 인천e음86, 111, 111B, 302, 302B, 308, 310"));
+    busList.appendChild(createBullet("인천아시아드주경기장(동문) [89354] : 3-2, 71, 인천e음86"));
+    busList.appendChild(createBullet("인천아시아드주경기장(동문) [89359] : 3-2, 71, 인천e음86"));
+
+    const carTitle = createTransportTitle("🚗", "Car", "자가용");
+    const carList = document.createElement("ul");
+    carList.style.paddingLeft = "18px";
+    carList.style.margin = "0";
+    carList.style.listStyleType = "circle";
+
+    carList.appendChild(createBullet('네비게이션 : "아시아드웨딩컨벤션" 또는 "염곡로 725" 입력'));
+    carList.appendChild(createBullet("주차장 안내 : 인천아시아드주경기장 3번 게이트 앞 주차장 이용"));
+    carList.appendChild(createBullet("상담 방문시 3번 게이트 앞 주차장 이용시 웨딩홀과 가장 가깝습니다."));
+
+    section.appendChild(subwayTitle);
+    section.appendChild(subwayList);
+    section.appendChild(busTitle);
+    section.appendChild(busList);
+    section.appendChild(carTitle);
+    section.appendChild(carList);
+
+    const locationSection =
+      document.querySelector("#location") ||
+      document.querySelector(".location") ||
+      document.querySelector("[data-section='location']") ||
+      document.querySelector(".map") ||
+      document.querySelector("#map");
+
+    if (!locationSection) {
+      document.body.appendChild(section);
+      return;
+    }
+
+    const mapImage =
+      locationSection.querySelector("img") ||
+      locationSection.querySelector(".map-image") ||
+      locationSection.querySelector("[class*='map']");
+
+    if (mapImage && mapImage.parentElement && mapImage.parentElement !== locationSection) {
+      locationSection.insertBefore(section, mapImage.parentElement);
+    } else if (mapImage && mapImage !== locationSection) {
+      locationSection.insertBefore(section, mapImage);
+    } else {
+      locationSection.appendChild(section);
+    }
+  }
+
+  window.addEventListener("DOMContentLoaded", function () {
+    setTimeout(createTransportInfo, 500);
+    setTimeout(createTransportInfo, 1200);
+  });
+
+  window.addEventListener("load", function () {
+    setTimeout(createTransportInfo, 500);
   });
 })();
 
@@ -577,11 +814,11 @@ const CONFIG = {
   }
 
   window.addEventListener("DOMContentLoaded", function () {
-    setTimeout(createMapButtons, 500);
+    setTimeout(createMapButtons, 800);
   });
 
   window.addEventListener("load", function () {
-    setTimeout(createMapButtons, 500);
+    setTimeout(createMapButtons, 800);
   });
 })();
 
